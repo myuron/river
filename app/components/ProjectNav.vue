@@ -7,6 +7,9 @@ defineProps<{ project: Project }>();
     <span class="project-name">{{ project.name }}</span>
     <NuxtLink :to="`/projects/${project.id}`" exact-active-class="active">WBS</NuxtLink>
     <NuxtLink :to="`/projects/${project.id}/issues`" active-class="active">課題</NuxtLink>
+    <NuxtLink :to="`/projects/${project.id}/dashboard`" active-class="active"
+      >ダッシュボード</NuxtLink
+    >
   </nav>
 </template>
 
