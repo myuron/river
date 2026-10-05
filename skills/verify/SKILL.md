@@ -5,7 +5,7 @@ description: Run the project's full CI checks (`just ci`) locally and fix failur
 
 # verify
 
-Make the working tree pass exactly what CI runs: `just ci` (format check → lint → typecheck → test).
+Make the working tree pass exactly what CI runs: `just ci` (format check → lint → typecheck → test → e2e).
 
 ## Steps
 
@@ -13,12 +13,13 @@ Make the working tree pass exactly what CI runs: `just ci` (format check → lin
 2. Fix the failure according to the table below, then re-run `just ci`.
 3. Repeat until it passes. If the same failure survives 3 attempts, stop and report what you tried instead of looping.
 
-| Failing step               | How to fix                                                                                                                                                      |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nix fmt -- --ci`          | Run `nix fmt` to apply formatting, then check `git diff` to confirm only formatting changed.                                                                    |
-| `pnpm lint` (oxlint)       | Fix the code. Do not disable rules or add `eslint-disable`/`oxlint-disable` comments unless the rule is clearly a false positive — and say so in your report.   |
-| `pnpm typecheck` (vue-tsc) | Fix the types. Don't paper over with `any`, `as unknown as`, or `@ts-ignore`. TypeScript is pinned to 6.x on purpose (vue-tsc breaks on 7) — never upgrade it.  |
-| `pnpm test` (vitest)       | Decide whether the code or the test is wrong. Only change a test's expectation when the spec actually changed; never delete or skip a failing test to go green. |
+| Failing step               | How to fix                                                                                                                                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nix fmt -- --ci`          | Run `nix fmt` to apply formatting, then check `git diff` to confirm only formatting changed.                                                                                                       |
+| `pnpm lint` (oxlint)       | Fix the code. Do not disable rules or add `eslint-disable`/`oxlint-disable` comments unless the rule is clearly a false positive — and say so in your report.                                      |
+| `pnpm typecheck` (vue-tsc) | Fix the types. Don't paper over with `any`, `as unknown as`, or `@ts-ignore`. TypeScript is pinned to 6.x on purpose (vue-tsc breaks on 7) — never upgrade it.                                     |
+| `pnpm test` (vitest)       | Decide whether the code or the test is wrong. Only change a test's expectation when the spec actually changed; never delete or skip a failing test to go green.                                    |
+| `playwright test` (e2e)    | Same rule as vitest. Use the trace in `test-results/` to see why. If browsers fail to launch, check `@playwright/test` still matches nixpkgs `playwright-driver` — never run `playwright install`. |
 
 ## Rules
 

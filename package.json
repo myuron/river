@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@nuxt/test-utils": "^4.3.3",
+    "@playwright/test": "1.61.1",
     "@vue/test-utils": "^2.5.1",
     "drizzle-kit": "^0.31.11",
     "happy-dom": "^20.14.5",

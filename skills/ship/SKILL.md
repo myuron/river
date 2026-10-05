@@ -31,7 +31,7 @@ For each acceptance criterion:
 2. Run `just test <file>` and confirm it **fails for the expected reason**.
 3. Implement the minimum to make it pass; re-run.
 
-Where a criterion can't reasonably be unit-tested (pure layout/visual), note it and check it by running the app instead.
+Where a criterion is about a whole page or user flow, write a Playwright test in `test/e2e/` and run it with `just e2e <file>`. Where it can't reasonably be tested at all (pure layout/visual), note it and check it in the running app (`just dev`) with the Playwright MCP browser instead.
 
 ## 4. Verify
 

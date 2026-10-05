@@ -8,9 +8,9 @@ export default defineNuxtConfig({
     databaseUrl: "",
   },
   typescript: {
-    // Type-check node-environment unit tests (test/nuxt is covered by the app tsconfig)
+    // Type-check node-side tests: unit and Playwright e2e (test/nuxt is covered by the app tsconfig)
     nodeTsConfig: {
-      include: ["../test/unit/**/*"],
+      include: ["../test/unit/**/*", "../test/e2e/**/*", "../playwright.config.ts"],
     },
   },
 });
