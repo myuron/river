@@ -35,5 +35,6 @@ export default defineEventHandler(async (event) => {
       throw error;
     });
   setResponseStatus(event, 201);
-  return task;
+  const [created] = await selectTasks(eq(tasks.id, task!.id));
+  return created;
 });

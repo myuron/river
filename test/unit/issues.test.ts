@@ -11,17 +11,17 @@ describe("parseIssueFields", () => {
       parseIssueFields({
         title: " 題 ",
         body: "a\nb",
-        assignee: " ",
+        assigneeId: "",
         priority: "high",
         dueDate: "",
       }),
     ).toEqual({
       ok: true,
-      value: { title: "題", body: "a\nb", assignee: null, priority: "high", dueDate: null },
+      value: { title: "題", body: "a\nb", assigneeId: null, priority: "high", dueDate: null },
     });
-    expect(parseIssueFields({ assignee: " 佐藤 ", dueDate: "2026-04-30", body: null })).toEqual({
+    expect(parseIssueFields({ assigneeId: "7", dueDate: "2026-04-30", body: null })).toEqual({
       ok: true,
-      value: { assignee: "佐藤", dueDate: "2026-04-30", body: "" },
+      value: { assigneeId: 7, dueDate: "2026-04-30", body: "" },
     });
   });
 
@@ -32,7 +32,11 @@ describe("parseIssueFields", () => {
     [{ status: "closed" }, "ステータスが正しくありません"],
     [{ priority: "urgent" }, "優先度が正しくありません"],
     [{ dueDate: "2026-02-30" }, "期限日の形式が正しくありません"],
-    [{ assignee: [] }, "担当者が正しくありません"],
+    [{ assigneeId: [] }, "担当者が正しくありません"],
+    [{ assigneeId: "abc" }, "担当者が正しくありません"],
+    [{ assignee: "佐藤" }, "担当者は登録ユーザーから選択してください"],
+    [{ assigneeId: 0 }, "担当者が正しくありません"],
+    [{ assigneeId: 1.5 }, "担当者が正しくありません"],
   ])("rejects %j", (input, message) => {
     expect(parseIssueFields(input)).toEqual({ ok: false, message });
   });

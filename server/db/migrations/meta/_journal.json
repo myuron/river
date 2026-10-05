@@ -50,6 +50,20 @@
       "when": 1791220667634,
       "tag": "0006_users_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791221291264,
+      "tag": "0007_assignee_ids",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791221292354,
+      "tag": "0008_drop_assignee_names",
+      "breakpoints": true
     }
   ]
 }

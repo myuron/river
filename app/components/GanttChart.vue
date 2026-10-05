@@ -49,6 +49,9 @@ const barStyle = (bar: GanttBar) => ({
           <span class="title" data-testid="gantt-title" :title="row.task.title">
             {{ row.task.title }}
           </span>
+          <span class="assignee" data-testid="gantt-assignee">{{
+            row.task.assignee?.name ?? "-"
+          }}</span>
         </div>
         <div class="timeline">
           <div
@@ -115,7 +118,7 @@ const barStyle = (bar: GanttBar) => ({
 
 .gantt-line {
   display: grid;
-  grid-template-columns: 16rem calc(var(--days) * var(--day-width));
+  grid-template-columns: 20rem calc(var(--days) * var(--day-width));
   min-width: max-content;
   border-bottom: 1px solid var(--border);
 }
@@ -141,6 +144,17 @@ const barStyle = (bar: GanttBar) => ({
 
 .title {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assignee {
+  margin-left: auto;
+  padding-left: 0.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  flex: none;
+  max-width: 5rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }

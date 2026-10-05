@@ -17,12 +17,7 @@ const today = useToday();
 // The filter lives in the URL so reloads and shared links show the same list.
 const filter = computed(() => parseIssueFilter(route.query));
 const visibleIssues = computed(() => filterIssues(issues.value, filter.value, today.value));
-const assignees = computed(() => {
-  const names = new Set(issues.value.map((i) => i.assignee).filter((a): a is string => a !== null));
-  // Keep a selected name from a shared URL visible even if no issue has it any more.
-  if (filter.value.assignee.type === "name") names.add(filter.value.assignee.name);
-  return [...names].sort((a, b) => a.localeCompare(b, "ja"));
-});
+const { data: users } = await useUsers();
 
 function setFilter(next: IssueFilter) {
   void router.replace({ query: issueFilterToQuery(next) });
@@ -88,12 +83,7 @@ async function createIssue() {
     <p v-if="loadError" class="error">課題を読み込めませんでした</p>
     <p v-else-if="issues.length === 0" class="empty">課題がまだありません</p>
     <template v-else>
-      <IssueFilterPanel
-        :filter="filter"
-        :assignees="assignees"
-        @change="setFilter"
-        @clear="clearFilter"
-      />
+      <IssueFilterPanel :filter="filter" :users="users" @change="setFilter" @clear="clearFilter" />
       <p class="count" data-testid="issue-count">{{ visibleIssues.length }}件</p>
       <p v-if="visibleIssues.length === 0" class="empty">条件に一致する課題はありません</p>
     </template>
@@ -121,7 +111,7 @@ async function createIssue() {
             </NuxtLink>
           </td>
           <td><IssueStatusBadge :status="issue.status" /></td>
-          <td data-testid="issue-assignee">{{ issue.assignee ?? "-" }}</td>
+          <td data-testid="issue-assignee">{{ issue.assignee?.name ?? "-" }}</td>
           <td data-testid="issue-priority">{{ ISSUE_PRIORITY_LABELS[issue.priority] }}</td>
           <td class="nowrap">
             <span data-testid="issue-due">{{ issue.dueDate ?? "-" }}</span>

@@ -23,13 +23,13 @@ describe("parseIssueFilter", () => {
       parseIssueFilter({
         status: "resolved,bogus",
         priority: "high,low",
-        assignee: "佐藤",
+        assignee: "12",
         overdue: "1",
       }),
     ).toEqual({
       statuses: ["resolved"],
       priorities: ["high", "low"],
-      assignee: { type: "name", name: "佐藤" },
+      assignee: { type: "user", id: 12 },
       overdueOnly: true,
     });
     expect(parseIssueFilter({ status: "", unassigned: "1" })).toEqual({
@@ -50,13 +50,16 @@ describe("parseIssueFilter", () => {
         assignee: { type: "unassigned" },
         overdueOnly: true,
       },
-      { statuses: [], priorities: [], assignee: { type: "name", name: "a,b" }, overdueOnly: false },
+      { statuses: [], priorities: [], assignee: { type: "user", id: 3 }, overdueOnly: false },
     ];
     for (const filter of filters) {
       expect(parseIssueFilter(issueFilterToQuery(filter))).toEqual(filter);
     }
   });
 });
+
+const SATO = { id: 1, name: "佐藤" };
+const SUZUKI = { id: 2, name: "鈴木" };
 
 describe("filterIssues", () => {
   const today = "2026-04-10";
@@ -69,9 +72,9 @@ describe("filterIssues", () => {
     ...fields,
   });
   const issues = [
-    issue(1, { status: "open", assignee: "佐藤", priority: "high", dueDate: "2026-04-01" }),
-    issue(2, { status: "in_progress", assignee: "鈴木", priority: "low" }),
-    issue(3, { status: "resolved", assignee: "佐藤", dueDate: "2026-04-01" }),
+    issue(1, { status: "open", assignee: SATO, priority: "high", dueDate: "2026-04-01" }),
+    issue(2, { status: "in_progress", assignee: SUZUKI, priority: "low" }),
+    issue(3, { status: "resolved", assignee: SATO, dueDate: "2026-04-01" }),
     issue(4, { status: "open" }),
   ];
   const ids = (filter: Partial<IssueFilter>) =>
@@ -86,14 +89,20 @@ describe("filterIssues", () => {
   });
 
   it("combines conditions with AND", () => {
-    expect(ids({ statuses: [], assignee: { type: "name", name: "佐藤" } })).toEqual([1, 3]);
+    expect(ids({ statuses: [], assignee: { type: "user", id: SATO.id } })).toEqual([1, 3]);
     expect(
-      ids({ statuses: [], assignee: { type: "name", name: "佐藤" }, priorities: ["high"] }),
+      ids({ statuses: [], assignee: { type: "user", id: SATO.id }, priorities: ["high"] }),
     ).toEqual([1]);
     expect(ids({ statuses: [], assignee: { type: "unassigned" } })).toEqual([4]);
     expect(ids({ statuses: [], overdueOnly: true })).toEqual([1]);
     expect(ids({ statuses: ["in_progress", "resolved"], priorities: ["low", "medium"] })).toEqual([
       2, 3,
     ]);
+  });
+});
+
+describe("parseIssueFilter assignee", () => {
+  it("ignores a non-numeric assignee", () => {
+    expect(parseIssueFilter({ assignee: "佐藤" }).assignee).toEqual({ type: "any" });
   });
 });

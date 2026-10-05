@@ -69,7 +69,7 @@ function openRow(event: MouseEvent, url: string) {
               <span class="number">{{ row.number }}</span>
               <span data-testid="delayed-title">{{ row.task.title }}</span>
             </td>
-            <td data-testid="delayed-assignee">{{ row.task.assignee ?? "-" }}</td>
+            <td data-testid="delayed-assignee">{{ row.task.assignee?.name ?? "-" }}</td>
             <td data-testid="delayed-end">{{ row.task.plannedEnd }}</td>
             <td data-testid="delayed-days">{{ row.daysLate }}日</td>
           </tr>
@@ -136,7 +136,7 @@ function openRow(event: MouseEvent, url: string) {
                   {{ issue.title }}
                 </NuxtLink>
               </td>
-              <td data-testid="overdue-issue-assignee">{{ issue.assignee ?? "-" }}</td>
+              <td data-testid="overdue-issue-assignee">{{ issue.assignee?.name ?? "-" }}</td>
               <td data-testid="overdue-issue-priority">
                 {{ ISSUE_PRIORITY_LABELS[issue.priority] }}
               </td>
@@ -160,8 +160,8 @@ function openRow(event: MouseEvent, url: string) {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in workload" :key="row.assignee ?? ''" data-testid="workload-row">
-            <td data-testid="workload-assignee">{{ row.assignee ?? "未割り当て" }}</td>
+          <tr v-for="row in workload" :key="row.assignee?.id ?? 0" data-testid="workload-row">
+            <td data-testid="workload-assignee">{{ row.assignee?.name ?? "未割り当て" }}</td>
             <td class="num" data-testid="workload-tasks">{{ row.taskCount }}</td>
             <td class="num" data-testid="workload-hours">{{ formatHours(row.taskHours) }}</td>
             <td class="num" data-testid="workload-issues">{{ row.issueCount }}</td>

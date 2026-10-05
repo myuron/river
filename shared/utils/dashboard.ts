@@ -97,9 +97,11 @@ export function summarizeIssues<T extends DashboardIssue>(
   return { byStatus, unresolvedByPriority, overdue };
 }
 
+type Assignee = { id: number; name: string } | null;
+
 export interface WorkloadRow {
   /** Null for work without an assignee (未割り当て). */
-  assignee: string | null;
+  assignee: Assignee;
   /** Unfinished leaf tasks. */
   taskCount: number;
   taskHours: number;
@@ -108,19 +110,19 @@ export interface WorkloadRow {
 }
 
 /**
- * Remaining work per assignee (names match after trimming). Sorted by task
- * hours, most first; the unassigned row always comes last.
+ * Remaining work per assigned user. Sorted by task hours, most first; the
+ * unassigned row always comes last.
  */
 export function summarizeWorkload(
-  tasks: readonly (DashboardTask & { assignee: string | null })[],
-  issues: readonly { status: IssueStatus; assignee: string | null }[],
+  tasks: readonly (DashboardTask & { assignee: Assignee })[],
+  issues: readonly { status: IssueStatus; assignee: Assignee }[],
 ): WorkloadRow[] {
-  const rows = new Map<string | null, WorkloadRow>();
-  const rowFor = (assignee: string | null) => {
-    const key = assignee?.trim() || null;
+  const rows = new Map<number | null, WorkloadRow>();
+  const rowFor = (assignee: Assignee) => {
+    const key = assignee?.id ?? null;
     let row = rows.get(key);
     if (!row) {
-      row = { assignee: key, taskCount: 0, taskHours: 0, issueCount: 0 };
+      row = { assignee, taskCount: 0, taskHours: 0, issueCount: 0 };
       rows.set(key, row);
     }
     return row;
@@ -142,6 +144,7 @@ export function summarizeWorkload(
       b.taskHours - a.taskHours ||
       b.taskCount - a.taskCount ||
       b.issueCount - a.issueCount ||
-      (a.assignee ?? "").localeCompare(b.assignee ?? "", "ja"),
+      (a.assignee?.name ?? "").localeCompare(b.assignee?.name ?? "", "ja") ||
+      (a.assignee?.id ?? 0) - (b.assignee?.id ?? 0),
   );
 }

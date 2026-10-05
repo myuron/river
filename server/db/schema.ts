@@ -35,7 +35,9 @@ export const tasks = pgTable(
     plannedEnd: date("planned_end", { mode: "string" }),
     actualStart: date("actual_start", { mode: "string" }),
     actualEnd: date("actual_end", { mode: "string" }),
-    assignee: text("assignee"),
+    assigneeId: integer("assignee_id").references((): AnyPgColumn => users.id, {
+      onDelete: "set null",
+    }),
     status: text("status").$type<TaskStatus>().notNull().default("todo"),
     estimateHours: doublePrecision("estimate_hours"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -56,7 +58,9 @@ export const issues = pgTable(
     title: text("title").notNull(),
     body: text("body").notNull().default(""),
     status: text("status").$type<IssueStatus>().notNull().default("open"),
-    assignee: text("assignee"),
+    assigneeId: integer("assignee_id").references((): AnyPgColumn => users.id, {
+      onDelete: "set null",
+    }),
     priority: text("priority").$type<IssuePriority>().notNull().default("medium"),
     dueDate: date("due_date", { mode: "string" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -9,7 +9,7 @@ import {
 export type AssigneeFilter =
   | { type: "any" }
   | { type: "unassigned" }
-  | { type: "name"; name: string };
+  | { type: "user"; id: number };
 
 /** Empty status/priority lists mean "any". Conditions combine with AND. */
 export interface IssueFilter {
@@ -51,8 +51,8 @@ export function parseIssueFilter(query: Query): IssueFilter {
     assignee:
       first(query.unassigned) === "1"
         ? { type: "unassigned" }
-        : assignee
-          ? { type: "name", name: assignee }
+        : assignee && /^\d+$/.test(assignee)
+          ? { type: "user", id: Number(assignee) }
           : { type: "any" },
     overdueOnly: first(query.overdue) === "1",
   };
@@ -63,7 +63,7 @@ export function issueFilterToQuery(filter: IssueFilter): Record<string, string> 
   const query: Record<string, string> = { status: filter.statuses.join(",") };
   if (filter.priorities.length > 0) query.priority = filter.priorities.join(",");
   if (filter.assignee.type === "unassigned") query.unassigned = "1";
-  if (filter.assignee.type === "name") query.assignee = filter.assignee.name;
+  if (filter.assignee.type === "user") query.assignee = String(filter.assignee.id);
   if (filter.overdueOnly) query.overdue = "1";
   return query;
 }
@@ -72,7 +72,7 @@ export function filterIssues<
   T extends {
     status: IssueStatus;
     priority: IssuePriority;
-    assignee: string | null;
+    assignee: { id: number } | null;
     dueDate: string | null;
   },
 >(issues: readonly T[], filter: IssueFilter, today: string): T[] {
@@ -80,7 +80,7 @@ export function filterIssues<
     if (filter.statuses.length > 0 && !filter.statuses.includes(issue.status)) return false;
     if (filter.priorities.length > 0 && !filter.priorities.includes(issue.priority)) return false;
     if (filter.assignee.type === "unassigned" && issue.assignee !== null) return false;
-    if (filter.assignee.type === "name" && issue.assignee !== filter.assignee.name) return false;
+    if (filter.assignee.type === "user" && issue.assignee?.id !== filter.assignee.id) return false;
     if (filter.overdueOnly && !isIssueOverdue(issue, today)) return false;
     return true;
   });

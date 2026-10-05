@@ -1,5 +1,6 @@
-import type { APIRequestContext, Page } from "@playwright/test";
+import type { APIRequestContext, Page, PlaywrightWorkerArgs } from "@playwright/test";
 import { addDays, todayIsoDate } from "../../../shared/utils/dates";
+import { LOGGED_OUT, uniqueEmail } from "./auth";
 
 /** Navigates and waits until Vue has hydrated, so form handlers are attached. */
 export async function gotoHydrated(page: Page, url: string) {
@@ -65,4 +66,36 @@ export async function createIssue(
     if (!patched.ok()) throw new Error(`updating issue failed: ${patched.status()}`);
   }
   return id;
+}
+
+/**
+ * Signs up users in a throwaway context (signing up through the test's own
+ * `request` would replace its session). Names get a unique suffix because the
+ * e2e database keeps every user ever created.
+ */
+type TestUser = { id: number; name: string };
+
+export async function createUsers<const P extends string[]>(
+  playwright: PlaywrightWorkerArgs["playwright"],
+  ...prefixes: P
+): Promise<{ [K in keyof P]: TestUser }> {
+  // Explicitly logged out: newContext() inherits the shared storageState, and signing up
+  // from it would end the session every other spec uses.
+  const context = await playwright.request.newContext({
+    baseURL: "http://localhost:3000",
+    storageState: LOGGED_OUT,
+  });
+  try {
+    const users: TestUser[] = [];
+    for (const prefix of prefixes) {
+      const response = await context.post("/api/auth/signup", {
+        data: { name: uniqueName(prefix), email: uniqueEmail(), password: "password123" },
+      });
+      if (!response.ok()) throw new Error(`createUsers failed: ${response.status()}`);
+      users.push(((await response.json()) as { user: TestUser }).user);
+    }
+    return users as { [K in keyof P]: TestUser };
+  } finally {
+    await context.dispose();
+  }
 }

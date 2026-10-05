@@ -1,24 +1,29 @@
 import { expect, test } from "@playwright/test";
-import { createIssue, createProject, gotoHydrated, isoDate } from "./support/app";
+import { createIssue, createProject, gotoHydrated, isoDate, createUsers } from "./support/app";
 
-test("filters issues, keeps the filter in the URL and clears it", async ({ page, request }) => {
+test("filters issues, keeps the filter in the URL and clears it", async ({
+  page,
+  request,
+  playwright,
+}) => {
+  const [sato, suzuki] = await createUsers(playwright, "佐藤", "鈴木");
   const projectId = await createProject(request);
   await createIssue(request, projectId, {
     title: "A 未対応 佐藤 高",
-    assignee: "佐藤",
+    assigneeId: sato.id,
     priority: "high",
   });
   await createIssue(request, projectId, {
     title: "B 対応中 鈴木 低 期限切れ",
     status: "in_progress",
-    assignee: "鈴木",
+    assigneeId: suzuki.id,
     priority: "low",
     dueDate: isoDate(-2),
   });
   await createIssue(request, projectId, {
     title: "C 解決済み 佐藤",
     status: "resolved",
-    assignee: "佐藤",
+    assigneeId: sato.id,
   });
   await createIssue(request, projectId, { title: "D 未対応 未割り当て" });
 
@@ -35,7 +40,7 @@ test("filters issues, keeps the filter in the URL and clears it", async ({ page,
 
   const filters = page.getByRole("search", { name: "課題の絞り込み" });
   await filters.getByLabel("解決済み").check();
-  await filters.getByLabel("担当者").selectOption("佐藤");
+  await filters.getByLabel("担当者").selectOption({ label: sato.name });
   await expect(titles).toHaveText(["C 解決済み 佐藤", "A 未対応 佐藤 高"]);
   await filters.getByLabel("高", { exact: true }).check();
   await expect(titles).toHaveText(["A 未対応 佐藤 高"]);
@@ -43,7 +48,7 @@ test("filters issues, keeps the filter in the URL and clears it", async ({ page,
 
   await page.reload();
   await expect(titles).toHaveText(["A 未対応 佐藤 高"]);
-  await expect(filters.getByLabel("担当者")).toHaveValue("佐藤");
+  await expect(filters.getByLabel("担当者")).toHaveValue(String(sato.id));
 
   // The same URL reproduces the result in a fresh page.
   const shared = await page.context().newPage();

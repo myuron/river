@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { createIssue, createProject, gotoHydrated, isoDate } from "./support/app";
+import { createIssue, createProject, createUsers, gotoHydrated, isoDate } from "./support/app";
 
 async function openEdit(page: Page) {
   await page.getByRole("button", { name: "編集" }).click();
@@ -8,7 +8,9 @@ async function openEdit(page: Page) {
 test("edits an issue's fields, persists them and shows them in the list", async ({
   page,
   request,
+  playwright,
 }) => {
+  const [sato] = await createUsers(playwright, "佐藤");
   const projectId = await createProject(request);
   const issueId = await createIssue(request, projectId, {
     title: "元のタイトル",
@@ -26,7 +28,7 @@ test("edits an issue's fields, persists them and shows them in the list", async 
   await page.getByLabel("タイトル").fill("新しいタイトル");
   await page.getByLabel("本文").fill("新しい本文\n2行目");
   await page.getByLabel("ステータス").selectOption({ label: "対応中" });
-  await page.getByLabel("担当者").fill("佐藤");
+  await page.getByLabel("担当者").selectOption({ label: sato.name });
   await page.getByLabel("優先度").selectOption({ label: "高" });
   await page.getByLabel("期限日").fill("2099-12-31");
   await page.getByRole("button", { name: "保存" }).click();
@@ -36,21 +38,21 @@ test("edits an issue's fields, persists them and shows them in the list", async 
   await expect(page.getByRole("heading", { level: 1, name: "新しいタイトル" })).toBeVisible();
   await expect(page.getByTestId("issue-body")).toHaveText("新しい本文\n2行目");
   await expect(page.getByTestId("issue-status")).toHaveText("対応中");
-  await expect(page.getByTestId("issue-assignee")).toHaveText("佐藤");
+  await expect(page.getByTestId("issue-assignee")).toHaveText(sato.name);
   await expect(page.getByTestId("issue-priority")).toHaveText("高");
   await expect(page.getByTestId("issue-due")).toHaveText("2099-12-31");
   await expect(page.getByTestId("issue-overdue")).toHaveCount(0);
 
   await gotoHydrated(page, `/projects/${projectId}/issues`);
   const row = page.getByTestId("issue-row").filter({ hasText: "新しいタイトル" });
-  await expect(row.getByTestId("issue-assignee")).toHaveText("佐藤");
+  await expect(row.getByTestId("issue-assignee")).toHaveText(sato.name);
   await expect(row.getByTestId("issue-priority")).toHaveText("高");
   await expect(row.getByTestId("issue-due")).toHaveText("2099-12-31");
 
   // Clearing optional fields
   await gotoHydrated(page, url);
   await openEdit(page);
-  await page.getByLabel("担当者").fill("");
+  await page.getByLabel("担当者").selectOption({ label: "未設定" });
   await page.getByLabel("期限日").fill("");
   await page.getByRole("button", { name: "保存" }).click();
   await expect(page.getByTestId("issue-assignee")).toHaveText("-");

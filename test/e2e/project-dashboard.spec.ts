@@ -1,5 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
-import { createIssue, createProject, createTask, gotoHydrated, isoDate } from "./support/app";
+import {
+  createIssue,
+  createProject,
+  createTask,
+  gotoHydrated,
+  isoDate,
+  createUsers,
+} from "./support/app";
 
 async function openDashboard(page: Page, projectId: number) {
   await gotoHydrated(page, `/projects/${projectId}`);
@@ -7,7 +14,12 @@ async function openDashboard(page: Page, projectId: number) {
   await expect(page).toHaveURL(`/projects/${projectId}/dashboard`);
 }
 
-test("summarizes leaf task progress and lists delayed tasks", async ({ page, request }) => {
+test("summarizes leaf task progress and lists delayed tasks", async ({
+  page,
+  request,
+  playwright,
+}) => {
+  const [sato] = await createUsers(playwright, "佐藤");
   const projectId = await createProject(request);
   const parent = await createTask(request, projectId, { title: "設計", status: "done" });
   await createTask(request, projectId, {
@@ -23,7 +35,7 @@ test("summarizes leaf task progress and lists delayed tasks", async ({ page, req
     status: "in_progress",
     estimateHours: 6,
     plannedEnd: isoDate(-2),
-    assignee: "佐藤",
+    assigneeId: sato.id,
   });
   await createTask(request, projectId, { title: "実装", plannedEnd: isoDate(-5) });
   await createTask(request, projectId, { title: "テスト", plannedEnd: isoDate(0) });
@@ -42,7 +54,7 @@ test("summarizes leaf task progress and lists delayed tasks", async ({ page, req
 
   const rows = page.getByTestId("delayed-row");
   await expect(rows.getByTestId("delayed-title")).toHaveText(["実装", "基本設計"]);
-  await expect(rows.getByTestId("delayed-assignee")).toHaveText(["-", "佐藤"]);
+  await expect(rows.getByTestId("delayed-assignee")).toHaveText(["-", sato.name]);
   await expect(rows.getByTestId("delayed-end")).toHaveText([isoDate(-5), isoDate(-2)]);
   await expect(rows.getByTestId("delayed-days")).toHaveText(["5日", "2日"]);
 });
@@ -68,13 +80,14 @@ test("a missing project's dashboard is a 404", async ({ page }) => {
   expect((await page.goto("/projects/999999999/dashboard"))?.status()).toBe(404);
 });
 
-test("summarizes issues and lists overdue ones", async ({ page, request }) => {
+test("summarizes issues and lists overdue ones", async ({ page, request, playwright }) => {
+  const [sato] = await createUsers(playwright, "佐藤");
   const projectId = await createProject(request);
   await createIssue(request, projectId, {
     title: "高・期限切れ",
     priority: "high",
     dueDate: isoDate(-1),
-    assignee: "佐藤",
+    assigneeId: sato.id,
   });
   await createIssue(request, projectId, {
     title: "中・対応中・古い期限",
@@ -112,7 +125,7 @@ test("summarizes issues and lists overdue ones", async ({ page, request }) => {
     "中・対応中・古い期限",
     "高・期限切れ",
   ]);
-  await expect(rows.getByTestId("overdue-issue-assignee")).toHaveText(["-", "佐藤"]);
+  await expect(rows.getByTestId("overdue-issue-assignee")).toHaveText(["-", sato.name]);
   await expect(rows.getByTestId("overdue-issue-priority")).toHaveText(["中", "高"]);
   await expect(rows.getByTestId("overdue-issue-due")).toHaveText([isoDate(-7), isoDate(-1)]);
 
@@ -136,51 +149,60 @@ test("shows zero issue counts for a project without issues", async ({ page, requ
   await expect(page.getByText("期限切れの課題はありません")).toBeVisible();
 });
 
-test("shows remaining work per assignee", async ({ page, request }) => {
+test("shows remaining work per assignee", async ({ page, request, playwright }) => {
+  const [sato, suzuki, takahashi] = await createUsers(playwright, "佐藤", "鈴木", "高橋");
   const projectId = await createProject(request);
   const parent = await createTask(request, projectId, {
     title: "親",
-    assignee: "佐藤",
+    assigneeId: sato.id,
     estimateHours: 50,
   });
   await createTask(request, projectId, {
     title: "a",
     parentId: parent,
-    assignee: "佐藤",
+    assigneeId: sato.id,
     estimateHours: 3,
   });
   await createTask(request, projectId, {
     title: "b",
     parentId: parent,
-    assignee: "鈴木",
+    assigneeId: suzuki.id,
     estimateHours: 8,
   });
   await createTask(request, projectId, {
     title: "c",
-    assignee: "鈴木",
+    assigneeId: suzuki.id,
     estimateHours: 5,
     status: "done",
   });
   await createTask(request, projectId, { title: "d", estimateHours: 30 });
-  await createTask(request, projectId, { title: "e", assignee: "高橋", status: "done" });
-  await createIssue(request, projectId, { title: "i1", assignee: "佐藤" });
-  // Saved trimmed by the API; trimming in the summary itself is unit-tested.
-  await createIssue(request, projectId, { title: "i2", assignee: " 佐藤 " });
-  await createIssue(request, projectId, { title: "i3", assignee: "高橋", status: "resolved" });
+  await createTask(request, projectId, { title: "e", assigneeId: takahashi.id, status: "done" });
+  await createIssue(request, projectId, { title: "i1", assigneeId: sato.id });
+  await createIssue(request, projectId, { title: "i2", assigneeId: sato.id });
+  await createIssue(request, projectId, {
+    title: "i3",
+    assigneeId: takahashi.id,
+    status: "resolved",
+  });
   const other = await createProject(request);
-  await createTask(request, other, { title: "x", assignee: "佐藤", estimateHours: 99 });
+  await createTask(request, other, { title: "x", assigneeId: sato.id, estimateHours: 99 });
 
   await openDashboard(page, projectId);
   const rows = page.getByTestId("workload-row");
-  await expect(rows.getByTestId("workload-assignee")).toHaveText(["鈴木", "佐藤", "未割り当て"]);
+  await expect(rows.getByTestId("workload-assignee")).toHaveText([
+    suzuki.name,
+    sato.name,
+    "未割り当て",
+  ]);
   await expect(rows.getByTestId("workload-tasks")).toHaveText(["1", "1", "1"]);
   await expect(rows.getByTestId("workload-hours")).toHaveText(["8h", "3h", "30h"]);
   await expect(rows.getByTestId("workload-issues")).toHaveText(["0", "2", "0"]);
 });
 
-test("shows a message when there is no remaining work", async ({ page, request }) => {
+test("shows a message when there is no remaining work", async ({ page, request, playwright }) => {
+  const [sato] = await createUsers(playwright, "佐藤");
   const projectId = await createProject(request);
-  await createTask(request, projectId, { title: "完了", assignee: "佐藤", status: "done" });
+  await createTask(request, projectId, { title: "完了", assigneeId: sato.id, status: "done" });
   await openDashboard(page, projectId);
   await expect(page.getByText("未完了の作業はありません")).toBeVisible();
 });

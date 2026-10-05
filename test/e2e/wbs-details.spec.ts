@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { createProject, gotoHydrated } from "./support/app";
+import { createProject, createUsers, gotoHydrated } from "./support/app";
 import { addChild, addTopLevel, wbsRow } from "./support/wbs";
 
 async function openDetails(page: Page, title: string) {
@@ -10,7 +10,12 @@ async function saveDetails(page: Page) {
   await page.getByRole("button", { name: "詳細を保存" }).click();
 }
 
-test("sets task details that persist and show in the tree", async ({ page, request }) => {
+test("sets task details that persist and show in the tree", async ({
+  page,
+  request,
+  playwright,
+}) => {
+  const [yamada] = await createUsers(playwright, "山田");
   const projectId = await createProject(request);
   await gotoHydrated(page, `/projects/${projectId}`);
   await addTopLevel(page, "実装");
@@ -22,13 +27,13 @@ test("sets task details that persist and show in the tree", async ({ page, reque
   await page.getByLabel("終了予定日").fill("2026-04-10");
   await page.getByLabel("開始日", { exact: true }).fill("2026-04-02");
   await page.getByLabel("終了日", { exact: true }).fill("2026-04-09");
-  await page.getByLabel("担当者").fill("山田");
+  await page.getByLabel("担当者").selectOption({ label: yamada.name });
   await page.getByLabel("ステータス").selectOption({ label: "進行中" });
   await page.getByLabel("見積工数（時間）").fill("12.5");
   await saveDetails(page);
 
   await expect(row.getByTestId("wbs-period")).toHaveText("2026-04-01〜2026-04-10");
-  await expect(row.getByTestId("wbs-assignee")).toHaveText("山田");
+  await expect(row.getByTestId("wbs-assignee")).toHaveText(yamada.name);
   await expect(row.getByTestId("wbs-status")).toHaveText("進行中");
   await expect(row.getByTestId("wbs-estimate")).toHaveText("12.5h");
 
@@ -40,7 +45,7 @@ test("sets task details that persist and show in the tree", async ({ page, reque
   await expect(page.getByLabel("終了日", { exact: true })).toHaveValue("2026-04-09");
 
   // Clearing optional fields
-  await page.getByLabel("担当者").fill("");
+  await page.getByLabel("担当者").selectOption({ label: "未設定" });
   await page.getByLabel("見積工数（時間）").fill("");
   await saveDetails(page);
   await expect(row.getByTestId("wbs-assignee")).toHaveText("-");
