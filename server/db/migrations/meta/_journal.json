@@ -29,6 +29,13 @@
       "when": 1791218932187,
       "tag": "0003_issues",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791219200082,
+      "tag": "0004_issue_fields",
+      "breakpoints": true
     }
   ]
 }

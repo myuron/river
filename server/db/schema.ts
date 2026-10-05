@@ -10,7 +10,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
-import type { IssueStatus } from "../../shared/utils/issues";
+import type { IssuePriority, IssueStatus } from "../../shared/utils/issues";
 import type { TaskStatus } from "../../shared/utils/task-details";
 
 export const projects = pgTable("projects", {
@@ -56,6 +56,9 @@ export const issues = pgTable(
     title: text("title").notNull(),
     body: text("body").notNull().default(""),
     status: text("status").$type<IssueStatus>().notNull().default("open"),
+    assignee: text("assignee"),
+    priority: text("priority").$type<IssuePriority>().notNull().default("medium"),
+    dueDate: date("due_date", { mode: "string" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("issues_project_id_idx").on(table.projectId)],

@@ -7,6 +7,8 @@ const { data: issues, refresh } = await useFetch<Issue[]>(
 
 useHead({ title: () => `課題 - ${project.value?.name ?? ""}` });
 
+const today = useToday();
+
 const title = ref("");
 const body = ref("");
 const error = ref("");
@@ -61,17 +63,31 @@ async function createIssue() {
         <tr>
           <th>タイトル</th>
           <th>ステータス</th>
+          <th>担当者</th>
+          <th>優先度</th>
+          <th>期限日</th>
           <th>登録日時</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="issue in issues" :key="issue.id" data-testid="issue-row">
+        <tr
+          v-for="issue in issues"
+          :key="issue.id"
+          data-testid="issue-row"
+          :class="{ overdue: isIssueOverdue(issue, today) }"
+        >
           <td>
             <NuxtLink :to="`/projects/${project.id}/issues/${issue.id}`" data-testid="issue-title">
               {{ issue.title }}
             </NuxtLink>
           </td>
           <td><IssueStatusBadge :status="issue.status" /></td>
+          <td data-testid="issue-assignee">{{ issue.assignee ?? "-" }}</td>
+          <td data-testid="issue-priority">{{ ISSUE_PRIORITY_LABELS[issue.priority] }}</td>
+          <td class="nowrap">
+            <span data-testid="issue-due">{{ issue.dueDate ?? "-" }}</span>
+            <OverdueBadge v-if="isIssueOverdue(issue, today)" />
+          </td>
           <td><DateTime :value="issue.createdAt" /></td>
         </tr>
       </tbody>
@@ -80,6 +96,14 @@ async function createIssue() {
 </template>
 
 <style scoped>
+tr.overdue {
+  background: var(--danger-bg);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
 .issue-form {
   display: flex;
   flex-direction: column;
