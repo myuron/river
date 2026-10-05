@@ -21,6 +21,8 @@ river is a web application built with Nuxt 4 + TypeScript (early stage — still
 - `just ci` — everything CI runs (format check, lint, typecheck, test).
 - `just lint` — oxlint (config: `.oxlintrc.json`). Run after editing JS/TS.
 - `just test` — vitest run; pass args through, e.g. `just test test/unit/foo.test.ts -t "name"` or `just test --project unit`. `just test-watch` for watch mode.
+- `just db-up` / `just db-down` — local PostgreSQL via Docker Compose (`compose.yaml`). Copy `.env.example` to `.env` first.
+- `just db-generate` / `just db-migrate` / `just db-studio` — drizzle-kit (config: `drizzle.config.ts`).
 - Format with `nix fmt` (treefmt-nix: nixfmt for Nix, oxfmt for JS/TS/Vue/JSON/YAML/Markdown with default Prettier-compatible style — double quotes, semicolons). Register new formatters under `treefmt.programs` in `flake.nix`; don't add formatters as npm deps.
 
 ## Testing
@@ -31,6 +33,11 @@ Two vitest projects (`vitest.config.ts`):
 - `test/nuxt/**/*.test.ts` — Nuxt runtime environment (`@nuxt/test-utils`, happy-dom). Use for components/composables; mount with `mountSuspended` from `@nuxt/test-utils/runtime`, and `~/` aliases work.
 
 Both directories are type-checked by `just typecheck` (`test/unit` via `typescript.nodeTsConfig` in `nuxt.config.ts`). Tests elsewhere won't be picked up.
+
+## Database
+
+- PostgreSQL + Drizzle ORM (`postgres` driver). Tables go in `server/db/schema.ts`; migrations are generated into `server/db/migrations/` and committed.
+- In server code, use the auto-imported `useDb()` (`server/utils/db.ts`). The connection URL comes from `NUXT_DATABASE_URL` (`runtimeConfig.databaseUrl`).
 
 ## Conventions
 

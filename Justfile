@@ -35,3 +35,23 @@ ci: install
   pnpm lint
   pnpm typecheck
   pnpm test
+
+# Start the local PostgreSQL container
+db-up:
+  docker compose up -d --wait db
+
+# Stop the local PostgreSQL container
+db-down:
+  docker compose down
+
+# Generate SQL migrations from server/db/schema.ts
+db-generate *args:
+  pnpm exec drizzle-kit generate {{args}}
+
+# Apply pending migrations to the database
+db-migrate:
+  pnpm exec drizzle-kit migrate
+
+# Open Drizzle Studio
+db-studio:
+  pnpm exec drizzle-kit studio
