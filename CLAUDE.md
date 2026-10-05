@@ -35,6 +35,8 @@ Two vitest projects (`vitest.config.ts`):
 
 Both directories are type-checked by `just typecheck` (`test/unit` via `typescript.nodeTsConfig` in `nuxt.config.ts`). Tests elsewhere won't be picked up.
 
+Test tool gotchas: `registerEndpoint` drops `message` from errors thrown with `createError`, so to test an error message call `setResponseStatus(event, 400)` and return `{ statusCode, message }` as a plain body. Playwright name/label/text matching is substring by default — pass `exact: true` when one label contains another ("タスクを追加" also matches "子タスクを追加").
+
 E2E tests live in `test/e2e/**/*.spec.ts` (Playwright, not vitest). Browsers come from nixpkgs via `PLAYWRIGHT_BROWSERS_PATH` in the devShell — never run `playwright install`. `@playwright/test` is pinned to exactly the nixpkgs `playwright-driver` version; bump both together or browsers won't launch.
 
 E2E tests share one database with no cleanup: name test data with `uniqueName()` and never assume a table is empty (test empty states in `test/nuxt` with `registerEndpoint`). Navigate with `gotoHydrated()` (`test/e2e/support/app.ts`) before interacting with forms. In `test/nuxt`, call `clearNuxtData()` in `beforeEach` — `useFetch` results are cached across mounts.
