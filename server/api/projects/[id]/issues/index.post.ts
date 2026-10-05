@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { issues } from "../../../../db/schema";
 
 /** Creates an issue from its title and body; other fields start at their defaults. */
@@ -13,7 +14,8 @@ export default defineEventHandler(async (event) => {
   const [issue] = await useDb()
     .insert(issues)
     .values({ projectId: project.id, title: parsed.value.title!, body: parsed.value.body ?? "" })
-    .returning();
+    .returning({ id: issues.id });
   setResponseStatus(event, 201);
-  return issue;
+  const [created] = await selectIssues(eq(issues.id, issue!.id));
+  return created;
 });

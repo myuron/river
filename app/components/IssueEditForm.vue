@@ -6,7 +6,7 @@ const form = reactive({
   title: props.issue.title,
   body: props.issue.body,
   status: props.issue.status,
-  assignee: props.issue.assignee ?? "",
+  assigneeId: props.issue.assignee ? String(props.issue.assignee.id) : "",
   priority: props.issue.priority,
   dueDate: props.issue.dueDate ?? "",
 });
@@ -56,7 +56,7 @@ async function save() {
       </label>
       <label class="field">
         <span>担当者</span>
-        <input v-model="form.assignee" type="text" />
+        <AssigneeSelect v-model="form.assigneeId" />
       </label>
       <label class="field">
         <span>優先度</span>

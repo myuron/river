@@ -28,17 +28,26 @@ export default defineEventHandler(async (event) => {
   if (dateError) {
     throw createError({ statusCode: 400, message: dateError });
   }
+  await assertAssigneeExists(details.value.assigneeId);
 
-  if (Object.keys(changes).length === 0) return task;
-
-  const [updated] = await useDb()
-    .update(tasks)
-    .set(changes)
-    .where(eq(tasks.id, task.id))
-    .returning();
-  if (!updated) {
-    // Deleted after requireTask().
-    throw createError({ statusCode: 404, message: "タスクが見つかりません" });
+  if (Object.keys(changes).length > 0) {
+    const [updated] = await useDb()
+      .update(tasks)
+      .set(changes)
+      .where(eq(tasks.id, task.id))
+      .returning({ id: tasks.id })
+      .catch((error: unknown) => {
+        // The assignee was deleted after the check above.
+        if (isForeignKeyViolation(error)) {
+          throw createError({ statusCode: 400, message: "担当者が見つかりません" });
+        }
+        throw error;
+      });
+    if (!updated) {
+      // Deleted after requireTask().
+      throw createError({ statusCode: 404, message: "タスクが見つかりません" });
+    }
   }
-  return updated;
+  const [result] = await selectTasks(eq(tasks.id, task.id));
+  return result;
 });

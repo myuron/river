@@ -12,21 +12,21 @@ describe("parseTaskDetails", () => {
       parseTaskDetails({
         plannedStart: "",
         plannedEnd: null,
-        assignee: "  ",
+        assigneeId: null,
         estimateHours: "",
       }),
     ).toEqual({
       ok: true,
-      value: { plannedStart: null, plannedEnd: null, assignee: null, estimateHours: null },
+      value: { plannedStart: null, plannedEnd: null, assigneeId: null, estimateHours: null },
     });
   });
 
-  it("accepts valid dates, trimmed assignees and non-negative estimates", () => {
+  it("accepts valid dates, assignee ids and non-negative estimates", () => {
     expect(
       parseTaskDetails({
         plannedStart: "2026-02-28",
         actualEnd: "2024-02-29",
-        assignee: " 山田 ",
+        assigneeId: 3,
         estimateHours: "1.5",
       }),
     ).toEqual({
@@ -34,7 +34,7 @@ describe("parseTaskDetails", () => {
       value: {
         plannedStart: "2026-02-28",
         actualEnd: "2024-02-29",
-        assignee: "山田",
+        assigneeId: 3,
         estimateHours: 1.5,
       },
     });
@@ -53,7 +53,9 @@ describe("parseTaskDetails", () => {
     [{ estimateHours: "1e999" }, "見積工数は0以上の数値で入力してください"],
     [{ estimateHours: "0x10" }, "見積工数は0以上の数値で入力してください"],
     [{ estimateHours: "1e2" }, "見積工数は0以上の数値で入力してください"],
-    [{ assignee: 3 }, "担当者が正しくありません"],
+    [{ assigneeId: "山田" }, "担当者が正しくありません"],
+    [{ assignee: "山田" }, "担当者は登録ユーザーから選択してください"],
+    [{ assigneeId: 99999999999 }, "担当者が正しくありません"],
   ])("rejects %j", (input, message) => {
     expect(parseTaskDetails(input)).toEqual({ ok: false, message });
   });

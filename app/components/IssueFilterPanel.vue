@@ -1,8 +1,8 @@
 <script setup lang="ts">
-const props = defineProps<{ filter: IssueFilter; assignees: string[] }>();
+const props = defineProps<{ filter: IssueFilter; users: AssigneeRef[] }>();
 const emit = defineEmits<{ change: [filter: IssueFilter]; clear: [] }>();
 
-// Not a name the select can produce from the assignee list.
+// Not a value a user option can have (those are numeric ids).
 const UNASSIGNED = "__unassigned__";
 
 function toggle<T>(list: T[], value: T, checked: boolean): T[] {
@@ -16,8 +16,8 @@ function update(patch: Partial<IssueFilter>) {
 const assigneeValue = computed(() =>
   props.filter.assignee.type === "unassigned"
     ? UNASSIGNED
-    : props.filter.assignee.type === "name"
-      ? props.filter.assignee.name
+    : props.filter.assignee.type === "user"
+      ? String(props.filter.assignee.id)
       : "",
 );
 
@@ -27,10 +27,17 @@ function onAssigneeChange(value: string) {
       value === UNASSIGNED
         ? { type: "unassigned" }
         : value
-          ? { type: "name", name: value }
+          ? { type: "user", id: Number(value) }
           : { type: "any" },
   });
 }
+
+// A user id from a shared URL that is no longer registered stays visible as selected.
+const unknownUserId = computed(() => {
+  const assignee = props.filter.assignee;
+  if (assignee.type !== "user" || props.users.some((u) => u.id === assignee.id)) return null;
+  return String(assignee.id);
+});
 
 const checked = (event: Event) => (event.target as HTMLInputElement).checked;
 </script>
@@ -66,7 +73,10 @@ const checked = (event: Event) => (event.target as HTMLInputElement).checked;
         @change="onAssigneeChange(($event.target as HTMLSelectElement).value)"
       >
         <option value="">すべて</option>
-        <option v-for="name in assignees" :key="name" :value="name">{{ name }}</option>
+        <option v-for="user in users" :key="user.id" :value="String(user.id)">
+          {{ user.name }}
+        </option>
+        <option v-if="unknownUserId" :value="unknownUserId">不明なユーザー</option>
         <option :value="UNASSIGNED">未割り当て</option>
       </select>
     </label>

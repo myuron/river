@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { createProject, createTask, gotoHydrated, isoDate } from "./support/app";
+import { createProject, createTask, createUsers, gotoHydrated, isoDate } from "./support/app";
 
 async function showGantt(page: Page, projectId: number) {
   await gotoHydrated(page, `/projects/${projectId}`);
@@ -12,10 +12,16 @@ function ganttRow(page: Page, title: string) {
   });
 }
 
-test("shows planned and actual bars on a daily axis in WBS order", async ({ page, request }) => {
+test("shows planned and actual bars on a daily axis in WBS order", async ({
+  page,
+  request,
+  playwright,
+}) => {
+  const [sato] = await createUsers(playwright, "佐藤");
   const projectId = await createProject(request);
   const design = await createTask(request, projectId, {
     title: "設計",
+    assigneeId: sato.id,
     plannedStart: "2026-05-04",
     plannedEnd: "2026-05-08",
     actualStart: "2026-05-05",
@@ -31,6 +37,7 @@ test("shows planned and actual bars on a daily axis in WBS order", async ({ page
   await showGantt(page, projectId);
   await expect(page.getByTestId("gantt-number")).toHaveText(["1", "1.1", "2"]);
   await expect(page.getByTestId("gantt-title")).toHaveText(["設計", "レビュー", "実装"]);
+  await expect(page.getByTestId("gantt-assignee")).toHaveText([sato.name, "-", "-"]);
 
   const days = page.getByTestId("gantt-day");
   await expect(days).toHaveCount(11);

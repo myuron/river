@@ -7,7 +7,7 @@ const form = reactive({
   plannedEnd: props.task.plannedEnd ?? "",
   actualStart: props.task.actualStart ?? "",
   actualEnd: props.task.actualEnd ?? "",
-  assignee: props.task.assignee ?? "",
+  assigneeId: props.task.assignee ? String(props.task.assignee.id) : "",
   status: props.task.status,
   estimateHours: props.task.estimateHours === null ? "" : String(props.task.estimateHours),
 });
@@ -62,7 +62,7 @@ async function save() {
       </label>
       <label class="field">
         <span>担当者</span>
-        <input v-model="form.assignee" type="text" />
+        <AssigneeSelect v-model="form.assigneeId" />
       </label>
       <label class="field">
         <span>ステータス</span>

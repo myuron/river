@@ -1,4 +1,5 @@
 import { isIsoDate } from "./dates";
+import { parseOptionalId } from "./ids";
 import { isBlank } from "./text";
 
 export const TASK_STATUSES = ["todo", "in_progress", "done"] as const;
@@ -18,7 +19,8 @@ export interface TaskDates {
 }
 
 export interface TaskDetails extends TaskDates {
-  assignee: string | null;
+  /** Registered user id; existence is checked by the API. */
+  assigneeId: number | null;
   status: TaskStatus;
   estimateHours: number | null;
 }
@@ -47,11 +49,13 @@ export function parseTaskDetails(raw: Record<string, unknown>): ParseResult {
   }
 
   if ("assignee" in raw) {
-    const input = raw.assignee;
-    if (input !== null && input !== undefined && typeof input !== "string") {
-      return { ok: false, message: "担当者が正しくありません" };
-    }
-    value.assignee = isBlank(input) ? null : (input as string).trim();
+    // Free-text assignees were replaced by user ids; fail loudly instead of ignoring it.
+    return { ok: false, message: "担当者は登録ユーザーから選択してください" };
+  }
+  if ("assigneeId" in raw) {
+    const assigneeId = parseOptionalId(raw.assigneeId);
+    if (!assigneeId.ok) return { ok: false, message: "担当者が正しくありません" };
+    value.assigneeId = assigneeId.value;
   }
 
   if ("status" in raw) {

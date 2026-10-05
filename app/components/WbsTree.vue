@@ -154,7 +154,7 @@ async function deleteTask(node: WbsNode<Task>) {
           <span data-testid="wbs-period">
             {{ formatPeriod(row.task.plannedStart, row.task.plannedEnd) }}
           </span>
-          <span data-testid="wbs-assignee">{{ row.task.assignee ?? "-" }}</span>
+          <span data-testid="wbs-assignee">{{ row.task.assignee?.name ?? "-" }}</span>
           <span data-testid="wbs-status">
             <span class="status" :class="`status-${row.task.status}`">
               {{ TASK_STATUS_LABELS[row.task.status] }}

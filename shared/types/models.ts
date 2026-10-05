@@ -18,7 +18,7 @@ export interface Task {
   plannedEnd: string | null;
   actualStart: string | null;
   actualEnd: string | null;
-  assignee: string | null;
+  assignee: AssigneeRef | null;
   status: TaskStatus;
   estimateHours: number | null;
   createdAt: string;
@@ -30,7 +30,7 @@ export interface Issue {
   title: string;
   body: string;
   status: IssueStatus;
-  assignee: string | null;
+  assignee: AssigneeRef | null;
   priority: IssuePriority;
   /** "YYYY-MM-DD" */
   dueDate: string | null;
@@ -50,4 +50,10 @@ export interface SessionUser {
   id: number;
   name: string;
   email: string;
+}
+
+/** A user as shown in pickers and assignee columns. */
+export interface AssigneeRef {
+  id: number;
+  name: string;
 }

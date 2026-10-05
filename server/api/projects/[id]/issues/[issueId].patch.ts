@@ -13,15 +13,25 @@ export default defineEventHandler(async (event) => {
   if (!parsed.ok) {
     throw createError({ statusCode: 400, message: parsed.message });
   }
-  if (Object.keys(parsed.value).length === 0) return issue;
+  await assertAssigneeExists(parsed.value.assigneeId);
 
-  const [updated] = await useDb()
-    .update(issues)
-    .set(parsed.value)
-    .where(eq(issues.id, issue.id))
-    .returning();
-  if (!updated) {
-    throw createError({ statusCode: 404, message: "課題が見つかりません" });
+  if (Object.keys(parsed.value).length > 0) {
+    const [updated] = await useDb()
+      .update(issues)
+      .set(parsed.value)
+      .where(eq(issues.id, issue.id))
+      .returning({ id: issues.id })
+      .catch((error: unknown) => {
+        // The assignee was deleted after the check above.
+        if (isForeignKeyViolation(error)) {
+          throw createError({ statusCode: 400, message: "担当者が見つかりません" });
+        }
+        throw error;
+      });
+    if (!updated) {
+      throw createError({ statusCode: 404, message: "課題が見つかりません" });
+    }
   }
-  return updated;
+  const [result] = await selectIssues(eq(issues.id, issue.id));
+  return result;
 });

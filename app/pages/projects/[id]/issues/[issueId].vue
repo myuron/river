@@ -65,7 +65,7 @@ async function deleteIssue() {
         <dt>ステータス</dt>
         <dd><IssueStatusBadge :status="issue.status" /></dd>
         <dt>担当者</dt>
-        <dd data-testid="issue-assignee">{{ issue.assignee ?? "-" }}</dd>
+        <dd data-testid="issue-assignee">{{ issue.assignee?.name ?? "-" }}</dd>
         <dt>優先度</dt>
         <dd data-testid="issue-priority">{{ ISSUE_PRIORITY_LABELS[issue.priority] }}</dd>
         <dt>期限日</dt>

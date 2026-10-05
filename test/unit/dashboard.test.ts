@@ -3,6 +3,18 @@ import { summarizeIssues, summarizeWbs, summarizeWorkload } from "../../shared/u
 
 const TODAY = "2026-04-10";
 
+const user = (id: number, name: string) => ({ id, name });
+const SATO = user(1, "佐藤");
+const SUZUKI = user(2, "鈴木");
+const TAKAHASHI = user(3, "高橋");
+const TANAKA = user(4, "田中");
+const [A, B, C, D] = ["A", "B", "C", "D"].map((name, i) => user(10 + i, name)) as [
+  ReturnType<typeof user>,
+  ReturnType<typeof user>,
+  ReturnType<typeof user>,
+  ReturnType<typeof user>,
+];
+
 const task = (
   id: number,
   parentId: number | null,
@@ -10,7 +22,7 @@ const task = (
     status: "todo" | "in_progress" | "done";
     estimateHours: number | null;
     plannedEnd: string | null;
-    assignee: string | null;
+    assignee: { id: number; name: string } | null;
   }> = {},
 ) => ({
   id,
@@ -62,7 +74,7 @@ describe("summarizeWbs", () => {
   it("lists unfinished tasks past their planned end, oldest first, with days late", () => {
     const summary = summarizeWbs(
       [
-        task(1, null, { plannedEnd: "2026-04-08", assignee: "佐藤" }),
+        task(1, null, { plannedEnd: "2026-04-08", assignee: SATO }),
         task(2, 1, { plannedEnd: "2026-04-01", status: "in_progress" }),
         task(3, null, { plannedEnd: "2026-04-05", status: "done" }), // finished
         task(4, null, { plannedEnd: TODAY }), // due today: not late
@@ -124,15 +136,15 @@ describe("summarizeIssues", () => {
 describe("summarizeWorkload", () => {
   const issue = (
     id: number,
-    assignee: string | null,
+    assignee: { id: number; name: string } | null,
     status: "open" | "in_progress" | "resolved" = "open",
   ) => ({ id, assignee, status });
 
   it("is empty when there is no unfinished work", () => {
     expect(
       summarizeWorkload(
-        [task(1, null, { status: "done", assignee: "佐藤" })],
-        [issue(1, "佐藤", "resolved")],
+        [task(1, null, { status: "done", assignee: SATO })],
+        [issue(1, SATO, "resolved")],
       ),
     ).toEqual([]);
   });
@@ -140,27 +152,27 @@ describe("summarizeWorkload", () => {
   it("aggregates unfinished leaf tasks and unresolved issues per assignee", () => {
     const rows = summarizeWorkload(
       [
-        task(1, null, { assignee: "佐藤", estimateHours: 100 }), // parent: not counted
-        task(2, 1, { assignee: "佐藤", estimateHours: 3 }),
-        task(3, 1, { assignee: " 佐藤 ", estimateHours: 2, status: "in_progress" }),
-        task(4, null, { assignee: "鈴木", estimateHours: 8 }),
-        task(5, null, { assignee: "鈴木", estimateHours: 4, status: "done" }),
+        task(1, null, { assignee: SATO, estimateHours: 100 }), // parent: not counted
+        task(2, 1, { assignee: SATO, estimateHours: 3 }),
+        task(3, 1, { assignee: SATO, estimateHours: 2, status: "in_progress" }),
+        task(4, null, { assignee: SUZUKI, estimateHours: 8 }),
+        task(5, null, { assignee: SUZUKI, estimateHours: 4, status: "done" }),
         task(6, null, { estimateHours: 20 }),
-        task(7, null, { assignee: "高橋" }),
+        task(7, null, { assignee: TAKAHASHI }),
       ],
       [
-        issue(1, "佐藤"),
-        issue(2, "佐藤", "in_progress"),
-        issue(3, "田中"),
+        issue(1, SATO),
+        issue(2, SATO, "in_progress"),
+        issue(3, TANAKA),
         issue(4, null),
-        issue(5, "鈴木", "resolved"),
+        issue(5, SUZUKI, "resolved"),
       ],
     );
     expect(rows).toEqual([
-      { assignee: "鈴木", taskCount: 1, taskHours: 8, issueCount: 0 },
-      { assignee: "佐藤", taskCount: 2, taskHours: 5, issueCount: 2 },
-      { assignee: "高橋", taskCount: 1, taskHours: 0, issueCount: 0 },
-      { assignee: "田中", taskCount: 0, taskHours: 0, issueCount: 1 },
+      { assignee: SUZUKI, taskCount: 1, taskHours: 8, issueCount: 0 },
+      { assignee: SATO, taskCount: 2, taskHours: 5, issueCount: 2 },
+      { assignee: TAKAHASHI, taskCount: 1, taskHours: 0, issueCount: 0 },
+      { assignee: TANAKA, taskCount: 0, taskHours: 0, issueCount: 1 },
       { assignee: null, taskCount: 1, taskHours: 20, issueCount: 1 },
     ]);
   });
@@ -170,14 +182,27 @@ describe("summarizeWorkload ties", () => {
   it("breaks equal hours by task count, then issue count, then name", () => {
     const rows = summarizeWorkload(
       [
-        task(1, null, { assignee: "B", estimateHours: 2 }),
-        task(2, null, { assignee: "A", estimateHours: 1 }),
-        task(3, null, { assignee: "A", estimateHours: 1 }),
-        task(4, null, { assignee: "C", estimateHours: 2 }),
-        task(5, null, { assignee: "D", estimateHours: 2 }),
+        task(1, null, { assignee: B, estimateHours: 2 }),
+        task(2, null, { assignee: A, estimateHours: 1 }),
+        task(3, null, { assignee: A, estimateHours: 1 }),
+        task(4, null, { assignee: C, estimateHours: 2 }),
+        task(5, null, { assignee: D, estimateHours: 2 }),
       ],
-      [{ assignee: "D", status: "open" }],
+      [{ assignee: D, status: "open" }],
     );
-    expect(rows.map((r) => r.assignee)).toEqual(["A", "D", "B", "C"]);
+    expect(rows.map((r) => r.assignee?.name)).toEqual(["A", "D", "B", "C"]);
+  });
+});
+
+describe("summarizeWorkload same names", () => {
+  it("keeps different users with the same name in separate rows", () => {
+    const rows = summarizeWorkload(
+      [
+        task(1, null, { assignee: user(50, "佐藤") }),
+        task(2, null, { assignee: user(51, "佐藤") }),
+      ],
+      [],
+    );
+    expect(rows.map((r) => r.assignee?.id)).toEqual([50, 51]);
   });
 });

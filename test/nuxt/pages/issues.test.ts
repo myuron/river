@@ -59,7 +59,7 @@ describe("issue list page", () => {
       issue({
         id: 1,
         title: "期限切れ",
-        assignee: "佐藤",
+        assignee: { id: 1, name: "佐藤" },
         priority: "high",
         dueDate: "2026-04-09",
       }),
@@ -99,7 +99,12 @@ describe("issue list filters", () => {
     clearNuxtData();
     issues = [
       issue({ id: 1, title: "未対応の課題" }),
-      issue({ id: 2, title: "対応中の課題", status: "in_progress", assignee: "佐藤" }),
+      issue({
+        id: 2,
+        title: "対応中の課題",
+        status: "in_progress",
+        assignee: { id: 1, name: "佐藤" },
+      }),
       issue({ id: 3, title: "解決した課題", status: "resolved", priority: "high" }),
     ];
   });
@@ -120,10 +125,10 @@ describe("issue list filters", () => {
     expect(titles(wrapper)).toEqual(["解決した課題"]);
   });
 
-  it("offers existing assignees plus 未割り当て", async () => {
+  it("offers registered users plus 未割り当て", async () => {
     const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues" });
     const options = wrapper.findAll("select option").map((o) => o.text());
-    expect(options).toEqual(["すべて", "佐藤", "未割り当て"]);
+    expect(options).toEqual(["すべて", "佐藤", "鈴木", "未割り当て"]);
   });
 
   it("distinguishes 'no match' from 'no issues'", async () => {
@@ -139,13 +144,31 @@ describe("issue list filters", () => {
 describe("issue list edge cases", () => {
   beforeEach(() => {
     clearNuxtData();
-    issues = [issue({ id: 1, title: "課題", assignee: "佐藤" })];
+    issues = [issue({ id: 1, title: "課題", assignee: { id: 1, name: "佐藤" } })];
   });
 
-  it("keeps a selected assignee from the URL as an option even when nobody has it", async () => {
-    const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues?assignee=田中" });
+  it("filters by the assignee's user id from the URL", async () => {
+    issues = [...issues, issue({ id: 2, title: "鈴木の課題", assignee: { id: 2, name: "鈴木" } })];
+    const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues?assignee=2" });
     const select = wrapper.find("select").element as HTMLSelectElement;
-    expect(select.value).toBe("田中");
+    expect(select.value).toBe("2");
+    expect(wrapper.findAll("[data-testid=issue-title]").map((a) => a.text())).toEqual([
+      "鈴木の課題",
+    ]);
+  });
+});
+
+describe("issue list unknown assignee", () => {
+  beforeEach(() => {
+    clearNuxtData();
+    issues = [issue({ id: 1, title: "課題" })];
+  });
+
+  it("shows a user id from the URL that is no longer registered as 不明なユーザー", async () => {
+    const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues?assignee=999" });
+    const select = wrapper.find("select").element as HTMLSelectElement;
+    expect(select.value).toBe("999");
+    expect(select.selectedOptions[0]?.text).toBe("不明なユーザー");
     expect(wrapper.text()).toContain("条件に一致する課題はありません");
   });
 });
