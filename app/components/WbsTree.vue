@@ -244,7 +244,8 @@ async function deleteTask(node: WbsNode<Task>) {
 
 .wbs-line {
   display: grid;
-  grid-template-columns: 4.5rem minmax(10rem, 1fr) 12.5rem 7rem 5rem 4rem auto;
+  /* Fixed tracks so the header and every row line up. */
+  grid-template-columns: 3.5rem minmax(8rem, 1fr) 11.5rem 6rem 4.5rem 3.5rem 16.5rem;
   align-items: center;
   gap: 0.75rem;
 }
@@ -281,7 +282,17 @@ async function deleteTask(node: WbsNode<Task>) {
   color: var(--muted);
 }
 
+[data-testid="wbs-period"] {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.wbs-actions button {
+  white-space: nowrap;
+}
+
 .wbs-actions {
+  justify-content: flex-end;
   display: flex;
   gap: 0.25rem;
 }

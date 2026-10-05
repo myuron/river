@@ -1,4 +1,5 @@
 import type { APIRequestContext, Page } from "@playwright/test";
+import { addDays, todayIsoDate } from "../../../shared/utils/dates";
 
 /** Navigates and waits until Vue has hydrated, so form handlers are attached. */
 export async function gotoHydrated(page: Page, url: string) {
@@ -17,4 +18,30 @@ export async function createProject(request: APIRequestContext, name = uniqueNam
   const response = await request.post("/api/projects", { data: { name } });
   if (!response.ok()) throw new Error(`createProject failed: ${response.status()}`);
   return ((await response.json()) as { id: number }).id;
+}
+
+/** Creates a task through the API (optionally with detail fields) and returns its id. */
+export async function createTask(
+  request: APIRequestContext,
+  projectId: number,
+  data: { title: string; parentId?: number } & Record<string, unknown>,
+) {
+  const { title, parentId, ...details } = data;
+  const response = await request.post(`/api/projects/${projectId}/tasks`, {
+    data: { title, parentId: parentId ?? null },
+  });
+  if (!response.ok()) throw new Error(`createTask failed: ${response.status()}`);
+  const id = ((await response.json()) as { id: number }).id;
+  if (Object.keys(details).length > 0) {
+    const patched = await request.patch(`/api/projects/${projectId}/tasks/${id}`, {
+      data: details,
+    });
+    if (!patched.ok()) throw new Error(`updating task failed: ${patched.status()}`);
+  }
+  return id;
+}
+
+/** Local "YYYY-MM-DD", offset by `days` from today. */
+export function isoDate(days = 0) {
+  return addDays(todayIsoDate(), days);
 }
