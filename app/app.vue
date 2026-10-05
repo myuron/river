@@ -12,6 +12,10 @@ onMounted(() => {
     <NuxtRouteAnnouncer />
     <header class="app-header">
       <NuxtLink to="/" class="brand">river</NuxtLink>
+      <nav v-if="user" class="global-nav" aria-label="メイン">
+        <NuxtLink to="/">プロジェクト</NuxtLink>
+        <NuxtLink to="/dashboard">ダッシュボード</NuxtLink>
+      </nav>
       <div v-if="user" class="account">
         <span data-testid="current-user">{{ user.name }}</span>
         <button type="button" class="secondary" @click="logout">ログアウト</button>
@@ -39,6 +43,21 @@ onMounted(() => {
   color: var(--accent);
   text-decoration: none;
   letter-spacing: 0.05em;
+}
+
+.global-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.global-nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.global-nav a.router-link-exact-active {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .account {

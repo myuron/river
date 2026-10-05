@@ -10,7 +10,10 @@ import {
 
 async function openDashboard(page: Page, projectId: number) {
   await gotoHydrated(page, `/projects/${projectId}`);
-  await page.getByRole("link", { name: "ダッシュボード" }).click();
+  await page
+    .getByRole("navigation", { name: "プロジェクト" })
+    .getByRole("link", { name: "ダッシュボード" })
+    .click();
   await expect(page).toHaveURL(`/projects/${projectId}/dashboard`);
 }
 
