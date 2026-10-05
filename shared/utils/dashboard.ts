@@ -96,3 +96,52 @@ export function summarizeIssues<T extends DashboardIssue>(
     .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!) || a.id - b.id);
   return { byStatus, unresolvedByPriority, overdue };
 }
+
+export interface WorkloadRow {
+  /** Null for work without an assignee (未割り当て). */
+  assignee: string | null;
+  /** Unfinished leaf tasks. */
+  taskCount: number;
+  taskHours: number;
+  /** Unresolved issues. */
+  issueCount: number;
+}
+
+/**
+ * Remaining work per assignee (names match after trimming). Sorted by task
+ * hours, most first; the unassigned row always comes last.
+ */
+export function summarizeWorkload(
+  tasks: readonly (DashboardTask & { assignee: string | null })[],
+  issues: readonly { status: IssueStatus; assignee: string | null }[],
+): WorkloadRow[] {
+  const rows = new Map<string | null, WorkloadRow>();
+  const rowFor = (assignee: string | null) => {
+    const key = assignee?.trim() || null;
+    let row = rows.get(key);
+    if (!row) {
+      row = { assignee: key, taskCount: 0, taskHours: 0, issueCount: 0 };
+      rows.set(key, row);
+    }
+    return row;
+  };
+
+  for (const node of flattenWbsTree(buildWbsTree(tasks))) {
+    if (node.children.length > 0 || node.task.status === "done") continue;
+    const row = rowFor(node.task.assignee);
+    row.taskCount += 1;
+    row.taskHours += node.task.estimateHours ?? 0;
+  }
+  for (const issue of issues) {
+    if (issue.status !== "resolved") rowFor(issue.assignee).issueCount += 1;
+  }
+
+  return [...rows.values()].sort(
+    (a, b) =>
+      Number(a.assignee === null) - Number(b.assignee === null) ||
+      b.taskHours - a.taskHours ||
+      b.taskCount - a.taskCount ||
+      b.issueCount - a.issueCount ||
+      (a.assignee ?? "").localeCompare(b.assignee ?? "", "ja"),
+  );
+}

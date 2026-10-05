@@ -14,6 +14,7 @@ useHead({ title: () => `ダッシュボード - ${project.value?.name ?? ""}` })
 const today = useToday();
 const wbs = computed(() => summarizeWbs(tasks.value, today.value));
 const issueSummary = computed(() => summarizeIssues(issues.value, today.value));
+const workload = computed(() => summarizeWorkload(tasks.value, issues.value));
 const rate = (value: number | null) => (value === null ? "-" : `${value}%`);
 
 /** Whole-row click; modified clicks are left to the title link (new tab etc.). */
@@ -145,6 +146,30 @@ function openRow(event: MouseEvent, url: string) {
         </table>
       </template>
     </section>
+    <section aria-labelledby="workload">
+      <h2 id="workload">担当者別の負荷</h2>
+      <p v-if="tasksError || issuesError" class="error">データを読み込めませんでした</p>
+      <p v-else-if="workload.length === 0" class="empty">未完了の作業はありません</p>
+      <table v-else class="table workload">
+        <thead>
+          <tr>
+            <th>担当者</th>
+            <th class="num">未完了タスク</th>
+            <th class="num">見積工数</th>
+            <th class="num">未解決の課題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in workload" :key="row.assignee ?? ''" data-testid="workload-row">
+            <td data-testid="workload-assignee">{{ row.assignee ?? "未割り当て" }}</td>
+            <td class="num" data-testid="workload-tasks">{{ row.taskCount }}</td>
+            <td class="num" data-testid="workload-hours">{{ formatHours(row.taskHours) }}</td>
+            <td class="num" data-testid="workload-issues">{{ row.issueCount }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">未完了タスクは子タスクを持たない末端タスクが対象です。</p>
+    </section>
   </div>
 </template>
 
@@ -172,6 +197,11 @@ tr.clickable {
 
 tr.clickable:hover {
   background: var(--bg);
+}
+
+.workload .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .note {
