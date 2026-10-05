@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarizeWbs } from "../../shared/utils/dashboard";
+import { summarizeIssues, summarizeWbs } from "../../shared/utils/dashboard";
 
 const TODAY = "2026-04-10";
 
@@ -83,5 +83,40 @@ describe("summarizeWbs delayed parents", () => {
       TODAY,
     );
     expect(summary.delayed.map((d) => d.task.id)).toEqual([1]);
+  });
+});
+
+describe("summarizeIssues", () => {
+  const issue = (
+    id: number,
+    fields: Partial<{
+      status: "open" | "in_progress" | "resolved";
+      priority: "high" | "medium" | "low";
+      dueDate: string | null;
+    }> = {},
+  ) => ({ id, status: "open" as const, priority: "medium" as const, dueDate: null, ...fields });
+
+  it("counts zero for every bucket without issues", () => {
+    expect(summarizeIssues([], TODAY)).toEqual({
+      byStatus: { open: 0, in_progress: 0, resolved: 0 },
+      unresolvedByPriority: { high: 0, medium: 0, low: 0 },
+      overdue: [],
+    });
+  });
+
+  it("counts by status, unresolved by priority, and lists overdue oldest first", () => {
+    const summary = summarizeIssues(
+      [
+        issue(5, { status: "in_progress", dueDate: "2026-04-05" }),
+        issue(2, { status: "in_progress", priority: "high", dueDate: "2026-04-01" }),
+        issue(3, { status: "resolved", priority: "high", dueDate: "2026-03-01" }),
+        issue(4, { priority: "low", dueDate: TODAY }),
+        issue(1, { priority: "high", dueDate: "2026-04-05" }),
+      ],
+      TODAY,
+    );
+    expect(summary.byStatus).toEqual({ open: 2, in_progress: 2, resolved: 1 });
+    expect(summary.unresolvedByPriority).toEqual({ high: 2, medium: 1, low: 1 });
+    expect(summary.overdue.map((i) => i.id)).toEqual([2, 1, 5]);
   });
 });
