@@ -36,3 +36,11 @@ export interface Issue {
   dueDate: string | null;
   createdAt: string;
 }
+
+export interface IssueComment {
+  id: number;
+  issueId: number;
+  author: string | null;
+  body: string;
+  createdAt: string;
+}

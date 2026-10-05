@@ -77,6 +77,7 @@ async function deleteIssue() {
         <dd><DateTime :value="issue.createdAt" /></dd>
       </dl>
       <div class="card issue-body" data-testid="issue-body">{{ issue.body }}</div>
+      <IssueComments :project-id="project.id" :issue-id="issue.id" />
     </template>
   </div>
 </template>

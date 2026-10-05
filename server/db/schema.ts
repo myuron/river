@@ -63,3 +63,19 @@ export const issues = pgTable(
   },
   (table) => [index("issues_project_id_idx").on(table.projectId)],
 );
+
+/** Comments on an issue, deleted with it. */
+export const issueComments = pgTable(
+  "issue_comments",
+  {
+    id: serial("id").primaryKey(),
+    issueId: integer("issue_id")
+      .notNull()
+      .references(() => issues.id, { onDelete: "cascade" }),
+    /** Null when posted without a name (shown as 匿名). */
+    author: text("author"),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("issue_comments_issue_id_idx").on(table.issueId)],
+);
