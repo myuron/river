@@ -44,3 +44,10 @@ export interface IssueComment {
   body: string;
   createdAt: string;
 }
+
+/** The logged-in user as exposed to the client (no password hash). */
+export interface SessionUser {
+  id: number;
+  name: string;
+  email: string;
+}

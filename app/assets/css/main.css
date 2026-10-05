@@ -173,3 +173,14 @@ table.table th {
   gap: 1rem;
   margin-bottom: 1rem;
 }
+
+.auth-page {
+  max-width: 24rem;
+  margin: 2rem auto;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}

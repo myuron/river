@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { AUTH_STATE } from "./test/e2e/support/auth";
 
 // Browsers come from nixpkgs via PLAYWRIGHT_BROWSERS_PATH (set in the flake devShell).
 export default defineConfig({
@@ -9,7 +10,14 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+  ],
   webServer: {
     // The production server doesn't read .env itself; CI sets the env directly.
     command: "pnpm build && node --env-file-if-exists=.env .output/server/index.mjs",
