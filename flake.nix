@@ -60,7 +60,12 @@
             projectRootFile = "flake.nix";
             programs = {
               nixfmt.enable = true;
+              oxfmt.enable = true;
             };
+            settings.global.excludes = [
+              "pnpm-lock.yaml"
+              "public/**"
+            ];
           };
           devShells = {
             default = pkgs.mkShell {
@@ -68,6 +73,7 @@
                 nodejs
                 pnpm
                 just
+                oxfmt
               ];
               shellHook = agentLib.mkShellHook {
                 inherit pkgs bundle;

@@ -20,7 +20,7 @@ river is a web application built with Nuxt 4 + TypeScript (early stage — still
 - `just ci` — everything CI runs (format check, lint, typecheck, test).
 - `just lint` — oxlint (config: `.oxlintrc.json`). Run after editing JS/TS.
 - `just test` — vitest run; pass args through, e.g. `just test src/foo.test.ts -t "name"`. `just test-watch` for watch mode.
-- Format with `nix fmt` (treefmt-nix; currently only nixfmt). When adding a formatter for another language, register it under `treefmt.programs` in `flake.nix`.
+- Format with `nix fmt` (treefmt-nix: nixfmt for Nix, oxfmt for JS/TS/Vue/JSON/YAML/Markdown with default Prettier-compatible style — double quotes, semicolons). Register new formatters under `treefmt.programs` in `flake.nix`; don't add formatters as npm deps.
 
 ## Conventions
 
