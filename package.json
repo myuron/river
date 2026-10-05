@@ -1,0 +1,13 @@
+{
+  "name": "river",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint --no-error-on-unmatched-pattern",
+    "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "oxlint": "^1.86.0",
+    "vitest": "^5.0.3"
+  }
+}
