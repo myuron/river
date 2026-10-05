@@ -57,3 +57,25 @@ export interface AssigneeRef {
   id: number;
   name: string;
 }
+
+/** An unfinished task assigned to the current user, for the personal dashboard. */
+export interface MyTask {
+  id: number;
+  projectId: number;
+  projectName: string;
+  wbsNumber: string;
+  title: string;
+  status: TaskStatus;
+  plannedEnd: string | null;
+}
+
+/** An unresolved issue assigned to the current user, for the personal dashboard. */
+export interface MyIssue {
+  id: number;
+  projectId: number;
+  projectName: string;
+  title: string;
+  status: IssueStatus;
+  priority: IssuePriority;
+  dueDate: string | null;
+}
