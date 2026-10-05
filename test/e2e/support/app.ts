@@ -46,13 +46,23 @@ export function isoDate(days = 0) {
   return addDays(todayIsoDate(), days);
 }
 
-/** Creates an issue through the API and returns its id. */
+/** Creates an issue through the API (optionally updating other fields) and returns its id. */
 export async function createIssue(
   request: APIRequestContext,
   projectId: number,
-  data: { title: string } & Record<string, unknown>,
+  data: { title: string; body?: string } & Record<string, unknown>,
 ) {
-  const response = await request.post(`/api/projects/${projectId}/issues`, { data });
+  const { title, body, ...fields } = data;
+  const response = await request.post(`/api/projects/${projectId}/issues`, {
+    data: { title, body },
+  });
   if (!response.ok()) throw new Error(`createIssue failed: ${response.status()}`);
-  return ((await response.json()) as { id: number }).id;
+  const id = ((await response.json()) as { id: number }).id;
+  if (Object.keys(fields).length > 0) {
+    const patched = await request.patch(`/api/projects/${projectId}/issues/${id}`, {
+      data: fields,
+    });
+    if (!patched.ok()) throw new Error(`updating issue failed: ${patched.status()}`);
+  }
+  return id;
 }

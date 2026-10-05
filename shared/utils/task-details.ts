@@ -1,4 +1,5 @@
 import { isIsoDate } from "./dates";
+import { isBlank } from "./text";
 
 export const TASK_STATUSES = ["todo", "in_progress", "done"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
@@ -25,9 +26,6 @@ export interface TaskDetails extends TaskDates {
 const DATE_FIELDS = ["plannedStart", "plannedEnd", "actualStart", "actualEnd"] as const;
 
 type ParseResult = { ok: true; value: Partial<TaskDetails> } | { ok: false; message: string };
-
-const isBlank = (value: unknown) =>
-  value === null || value === undefined || (typeof value === "string" && value.trim() === "");
 
 /**
  * Validates the detail fields present in `raw` (form or request body).

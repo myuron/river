@@ -1,5 +1,5 @@
 // JSON shapes returned by the API (dates are ISO strings).
-import type { IssueStatus } from "../utils/issues";
+import type { IssuePriority, IssueStatus } from "../utils/issues";
 import type { TaskStatus } from "../utils/task-details";
 
 export interface Project {
@@ -30,5 +30,9 @@ export interface Issue {
   title: string;
   body: string;
   status: IssueStatus;
+  assignee: string | null;
+  priority: IssuePriority;
+  /** "YYYY-MM-DD" */
+  dueDate: string | null;
   createdAt: string;
 }
