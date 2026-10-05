@@ -38,10 +38,15 @@
               path = anthropic-skills;
               subdir = "skills";
             };
+            # Project-specific skills, tracked in ./skills (all enabled)
+            local = {
+              path = ./skills;
+            };
           };
           catalog = agentLib.discoverCatalog sources;
           allowlist = agentLib.allowlistFor {
             inherit catalog sources;
+            enableAll = [ "local" ];
             enable = [ "skill-creator" ];
           };
           selection = agentLib.selectSkills {
