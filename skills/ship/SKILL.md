@@ -33,6 +33,15 @@ For each acceptance criterion:
 
 Where a criterion is about a whole page or user flow, write a Playwright test in `test/e2e/` and run it with `just e2e <file>`. Where it can't reasonably be tested at all (pure layout/visual), note it and check it in the running app (`just dev`) with the Playwright MCP browser instead.
 
+Before moving on, check the change against what `reviewer` has flagged in past runs:
+
+- **Fetch errors**: a failed load shows an error, never the empty state.
+- **Mutations**: guard against double submit while in flight; on failure, show the error and refetch so the UI isn't stale; clear old error/inline state on retry or cancel.
+- **Concurrency**: server routes stay correct when two requests race (e.g. update vs delete of the same row → 404, not 204).
+- **Server validation**: every rejected input (blank, too long, bad id) has a test.
+- **E2E assertions**: assert each step's outcome (seed request status, dialog shown/closed), not only the final state.
+- **UI text** is Japanese, including error and 404 messages.
+
 ## 4. Verify
 
 Run the `verify` skill until `just ci` passes.

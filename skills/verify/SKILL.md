@@ -9,7 +9,7 @@ Make the working tree pass exactly what CI runs: `just ci` (format check → lin
 
 ## Steps
 
-1. Run `just ci`. It stops at the first failing step, so read which step failed.
+1. Run `nix fmt` first — `just ci` only checks formatting, and new or generated files (e.g. drizzle migration meta) are never formatted by the edit hook. Then run `just ci`. It stops at the first failing step, so read which step failed.
 2. Fix the failure according to the table below, then re-run `just ci`.
 3. Repeat until it passes. If the same failure survives 3 attempts, stop and report what you tried instead of looping.
 
