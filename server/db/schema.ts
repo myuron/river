@@ -79,3 +79,27 @@ export const issueComments = pgTable(
   },
   (table) => [index("issue_comments_issue_id_idx").on(table.issueId)],
 );
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  /** Stored lowercased. */
+  email: text("email").notNull().unique(),
+  /** scrypt hash from server/utils/password.ts; never the plain password. */
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Login sessions. The id is the SHA-256 of the cookie token, so a DB leak can't be replayed. */
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("sessions_user_id_idx").on(table.userId)],
+);

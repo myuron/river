@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { user, logout } = useAuth();
+
 // Lets e2e tests wait until the page is interactive.
 onMounted(() => {
   document.documentElement.dataset.hydrated = "true";
@@ -10,6 +12,10 @@ onMounted(() => {
     <NuxtRouteAnnouncer />
     <header class="app-header">
       <NuxtLink to="/" class="brand">river</NuxtLink>
+      <div v-if="user" class="account">
+        <span data-testid="current-user">{{ user.name }}</span>
+        <button type="button" class="secondary" @click="logout">ログアウト</button>
+      </div>
     </header>
     <main class="app-main">
       <NuxtPage />
@@ -33,6 +39,13 @@ onMounted(() => {
   color: var(--accent);
   text-decoration: none;
   letter-spacing: 0.05em;
+}
+
+.account {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .app-main {

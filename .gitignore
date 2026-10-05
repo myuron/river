@@ -32,3 +32,4 @@ test-results/
 playwright-report/
 blob-report/
 .playwright-mcp/
+test/e2e/.auth/

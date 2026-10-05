@@ -43,6 +43,13 @@
       "when": 1791219479825,
       "tag": "0005_issue_comments",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791220667634,
+      "tag": "0006_users_sessions",
+      "breakpoints": true
     }
   ]
 }

@@ -37,6 +37,8 @@ Both directories are type-checked by `just typecheck` (`test/unit` via `typescri
 
 E2E tests live in `test/e2e/**/*.spec.ts` (Playwright, not vitest). Browsers come from nixpkgs via `PLAYWRIGHT_BROWSERS_PATH` in the devShell — never run `playwright install`. `@playwright/test` is pinned to exactly the nixpkgs `playwright-driver` version; bump both together or browsers won't launch.
 
+E2E specs run logged in: the `setup` project (`test/e2e/auth.setup.ts`) signs up a user and every spec reuses its `storageState` (also for the `request` fixture). Use `test.use({ storageState: LOGGED_OUT })` for logged-out flows. In `test/nuxt`, `test/nuxt/setup.ts` registers a logged-in `/api/auth/me`.
+
 E2E tests share one database with no cleanup: name test data with `uniqueName()` and never assume a table is empty (test empty states in `test/nuxt` with `registerEndpoint`). Navigate with `gotoHydrated()` (`test/e2e/support/app.ts`) before interacting with forms. In `test/nuxt`, call `clearNuxtData()` in `beforeEach` — `useFetch` results are cached across mounts.
 
 To check UI by eye, use the Playwright MCP server (`.mcp.json`) against `just dev` on http://localhost:3000.
