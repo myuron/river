@@ -72,10 +72,11 @@ test("marks unresolved issues past their due date as overdue", async ({ page, re
     status: "resolved",
   });
 
-  await gotoHydrated(page, `/projects/${projectId}/issues`);
+  await gotoHydrated(page, `/projects/${projectId}/issues?status=`);
   const rowOf = (title: string) => page.getByTestId("issue-row").filter({ hasText: title });
   await expect(rowOf("期限切れ").getByTestId("issue-overdue")).toBeVisible();
   await expect(rowOf("今日まで").getByTestId("issue-overdue")).toHaveCount(0);
+  await expect(rowOf("解決済み")).toBeVisible();
   await expect(rowOf("解決済み").getByTestId("issue-overdue")).toHaveCount(0);
 
   await gotoHydrated(page, `/projects/${projectId}/issues/${overdue}`);

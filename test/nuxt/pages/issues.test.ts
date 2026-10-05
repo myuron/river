@@ -72,7 +72,7 @@ describe("issue list page", () => {
       }),
       issue({ id: 3, title: "未設定" }),
     ];
-    const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues" });
+    const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues?status=" });
     const rows = wrapper.findAll("[data-testid=issue-row]");
     const cell = (i: number, id: string) => rows[i]!.find(`[data-testid=${id}]`).text();
 
@@ -91,5 +91,61 @@ describe("issue list page", () => {
     expect(rows[0]!.find("[data-testid=issue-overdue]").exists()).toBe(true);
     expect(rows[1]!.find("[data-testid=issue-overdue]").exists()).toBe(false);
     expect(rows[2]!.find("[data-testid=issue-overdue]").exists()).toBe(false);
+  });
+});
+
+describe("issue list filters", () => {
+  beforeEach(() => {
+    clearNuxtData();
+    issues = [
+      issue({ id: 1, title: "未対応の課題" }),
+      issue({ id: 2, title: "対応中の課題", status: "in_progress", assignee: "佐藤" }),
+      issue({ id: 3, title: "解決した課題", status: "resolved", priority: "high" }),
+    ];
+  });
+
+  const titles = (wrapper: { findAll: (selector: string) => { text: () => string }[] }) =>
+    wrapper.findAll("[data-testid=issue-title]").map((a) => a.text());
+
+  it("shows only open and in-progress issues by default, with a count", async () => {
+    const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues" });
+    expect(titles(wrapper)).toEqual(["未対応の課題", "対応中の課題"]);
+    expect(wrapper.find("[data-testid=issue-count]").text()).toBe("2件");
+  });
+
+  it("applies the conditions in the query", async () => {
+    const wrapper = await mountSuspended(IssuesPage, {
+      route: "/projects/1/issues?status=&priority=high",
+    });
+    expect(titles(wrapper)).toEqual(["解決した課題"]);
+  });
+
+  it("offers existing assignees plus 未割り当て", async () => {
+    const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues" });
+    const options = wrapper.findAll("select option").map((o) => o.text());
+    expect(options).toEqual(["すべて", "佐藤", "未割り当て"]);
+  });
+
+  it("distinguishes 'no match' from 'no issues'", async () => {
+    const wrapper = await mountSuspended(IssuesPage, {
+      route: "/projects/1/issues?status=&unassigned=1&priority=low",
+    });
+    expect(wrapper.text()).toContain("条件に一致する課題はありません");
+    expect(wrapper.text()).not.toContain("課題がまだありません");
+    expect(wrapper.find("[data-testid=issue-count]").text()).toBe("0件");
+  });
+});
+
+describe("issue list edge cases", () => {
+  beforeEach(() => {
+    clearNuxtData();
+    issues = [issue({ id: 1, title: "課題", assignee: "佐藤" })];
+  });
+
+  it("keeps a selected assignee from the URL as an option even when nobody has it", async () => {
+    const wrapper = await mountSuspended(IssuesPage, { route: "/projects/1/issues?assignee=田中" });
+    const select = wrapper.find("select").element as HTMLSelectElement;
+    expect(select.value).toBe("田中");
+    expect(wrapper.text()).toContain("条件に一致する課題はありません");
   });
 });
