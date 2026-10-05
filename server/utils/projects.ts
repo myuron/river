@@ -7,7 +7,11 @@ export async function requireProject(event: H3Event, name = "id") {
   const id = requireIdParam(event, name);
   const [project] = await useDb().select().from(projects).where(eq(projects.id, id));
   if (!project) {
-    throw createError({ statusCode: 404, statusMessage: "Project not found" });
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Project not found",
+      message: "プロジェクトが見つかりません",
+    });
   }
   return project;
 }

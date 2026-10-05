@@ -34,3 +34,8 @@ export function buildWbsTree<T extends WbsItem>(tasks: readonly T[]): WbsNode<T>
 export function flattenWbsTree<T extends WbsItem>(nodes: readonly WbsNode<T>[]): WbsNode<T>[] {
   return nodes.flatMap((node) => [node, ...flattenWbsTree(node.children)]);
 }
+
+/** Number of tasks below `node` at any depth. */
+export function countDescendants(node: WbsNode<WbsItem>): number {
+  return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0);
+}
