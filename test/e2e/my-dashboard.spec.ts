@@ -5,6 +5,7 @@ import {
   createTask,
   createUsers,
   gotoHydrated,
+  isoDate,
   uniqueName,
 } from "./support/app";
 import { LOGGED_OUT, uniqueEmail } from "./support/auth";
@@ -110,4 +111,59 @@ test("shows empty messages when nothing is assigned", async ({ page }) => {
   await gotoHydrated(page, "/dashboard");
   await expect(page.getByText("担当中のタスクはありません")).toBeVisible();
   await expect(page.getByText("担当中の課題はありません")).toBeVisible();
+  for (const id of ["count-tasks", "count-issues", "count-overdue", "count-soon"]) {
+    await expect(page.getByTestId(id)).toHaveText("0");
+  }
+});
+
+test("highlights overdue and due-soon work and shows counts", async ({ page }) => {
+  const me = await signUp(page);
+  const request = page.request;
+  const projectId = await createProject(request);
+  const task = (title: string, plannedEnd: string | null) =>
+    createTask(request, projectId, { title, assigneeId: me.id, plannedEnd });
+  await task("昨日まで", isoDate(-1));
+  await task("今日まで", isoDate(0));
+  await task("7日後まで", isoDate(7));
+  await task("8日後まで", isoDate(8));
+  await task("期限なし", null);
+  await createIssue(request, projectId, {
+    title: "3日前まで",
+    assigneeId: me.id,
+    dueDate: isoDate(-3),
+  });
+  await createIssue(request, projectId, {
+    title: "3日後まで",
+    assigneeId: me.id,
+    dueDate: isoDate(3),
+  });
+  await createIssue(request, projectId, { title: "期限なし課題", assigneeId: me.id });
+
+  await gotoHydrated(page, "/dashboard");
+  await expect(page.getByTestId("count-tasks")).toHaveText("5");
+  await expect(page.getByTestId("count-issues")).toHaveText("3");
+  await expect(page.getByTestId("count-overdue")).toHaveText("2");
+  await expect(page.getByTestId("count-soon")).toHaveText("3");
+
+  const badgeOf = (row: ReturnType<Page["getByTestId"]>) => row.getByTestId("deadline-badge");
+  const taskRows = page.getByTestId("my-task-row");
+  await expect(taskRows.getByTestId("my-task-title")).toHaveText([
+    "昨日まで",
+    "今日まで",
+    "7日後まで",
+    "8日後まで",
+    "期限なし",
+  ]);
+  await expect(badgeOf(taskRows.nth(0))).toHaveAttribute("data-state", "overdue");
+  await expect(badgeOf(taskRows.nth(0))).toHaveText("期限切れ");
+  await expect(badgeOf(taskRows.nth(1))).toHaveAttribute("data-state", "soon");
+  await expect(badgeOf(taskRows.nth(1))).toHaveText("期限間近");
+  await expect(badgeOf(taskRows.nth(2))).toHaveAttribute("data-state", "soon");
+  await expect(badgeOf(taskRows.nth(3))).toHaveCount(0);
+  await expect(badgeOf(taskRows.nth(4))).toHaveCount(0);
+
+  const issueRows = page.getByTestId("my-issue-row");
+  await expect(badgeOf(issueRows.nth(0))).toHaveAttribute("data-state", "overdue");
+  await expect(badgeOf(issueRows.nth(1))).toHaveAttribute("data-state", "soon");
+  await expect(badgeOf(issueRows.nth(2))).toHaveCount(0);
 });
