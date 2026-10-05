@@ -47,7 +47,10 @@
           allowlist = agentLib.allowlistFor {
             inherit catalog sources;
             enableAll = [ "local" ];
-            enable = [ "skill-creator" ];
+            enable = [
+              "skill-creator"
+              "frontend-design"
+            ];
           };
           selection = agentLib.selectSkills {
             inherit catalog allowlist sources;
@@ -79,7 +82,13 @@
                 pnpm
                 just
                 oxfmt
+                playwright-mcp
               ];
+              # Use nixpkgs' browsers: Playwright's downloaded ones don't run on NixOS.
+              # Keep @playwright/test pinned to the same version as playwright-driver.
+              PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
+              PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+              PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
               shellHook = agentLib.mkShellHook {
                 inherit pkgs bundle;
                 targets = localTargets;

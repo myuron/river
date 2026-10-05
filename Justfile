@@ -29,12 +29,17 @@ test *args:
 test-watch:
   pnpm exec vitest
 
+# Run Playwright e2e tests (builds and starts the app)
+e2e *args:
+  pnpm exec playwright test {{args}}
+
 # Run all checks (used by CI)
 ci: install
   nix fmt -- --ci
   pnpm lint
   pnpm typecheck
   pnpm test
+  pnpm exec playwright test
 
 # Start the local PostgreSQL container
 db-up:
