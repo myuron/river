@@ -1,12 +1,9 @@
 <script setup lang="ts">
 const route = useRoute();
-const projectId = computed(() => String(route.params.id));
-
-const [{ data: project, error }, { data: tasks, refresh: refreshTasks }] = await Promise.all([
-  useFetch<Project>(() => `/api/projects/${projectId.value}`),
-  useFetch<Task[]>(() => `/api/projects/${projectId.value}/tasks`, { default: () => [] }),
+const [{ project }, { data: tasks, refresh: refreshTasks }] = await Promise.all([
+  useProject(),
+  useFetch<Task[]>(() => `/api/projects/${String(route.params.id)}/tasks`, { default: () => [] }),
 ]);
-throwOnFetchError(error);
 
 useHead({ title: () => project.value?.name ?? "" });
 
@@ -15,6 +12,7 @@ const view = ref<"tree" | "gantt">("tree");
 
 <template>
   <div v-if="project">
+    <ProjectNav :project="project" />
     <h1>{{ project.name }}</h1>
 
     <div class="wbs-head">

@@ -45,3 +45,14 @@ export async function createTask(
 export function isoDate(days = 0) {
   return addDays(todayIsoDate(), days);
 }
+
+/** Creates an issue through the API and returns its id. */
+export async function createIssue(
+  request: APIRequestContext,
+  projectId: number,
+  data: { title: string } & Record<string, unknown>,
+) {
+  const response = await request.post(`/api/projects/${projectId}/issues`, { data });
+  if (!response.ok()) throw new Error(`createIssue failed: ${response.status()}`);
+  return ((await response.json()) as { id: number }).id;
+}
