@@ -29,8 +29,9 @@ test *args:
 test-watch:
   pnpm exec vitest
 
-# Run Playwright e2e tests (builds and starts the app)
+# Run Playwright e2e tests (applies migrations, builds and starts the app; needs `just db-up`)
 e2e *args:
+  pnpm exec drizzle-kit migrate
   pnpm exec playwright test {{args}}
 
 # Run all checks (used by CI)
@@ -39,6 +40,7 @@ ci: install
   pnpm lint
   pnpm typecheck
   pnpm test
+  pnpm exec drizzle-kit migrate
   pnpm exec playwright test
 
 # Start the local PostgreSQL container

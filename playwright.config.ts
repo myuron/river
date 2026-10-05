@@ -11,7 +11,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm build && node .output/server/index.mjs",
+    // The production server doesn't read .env itself; CI sets the env directly.
+    command: "pnpm build && node --env-file-if-exists=.env .output/server/index.mjs",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

@@ -21,7 +21,7 @@ river is a web application built with Nuxt 4 + TypeScript (early stage — still
 - `just ci` — everything CI runs (`install`, `nix fmt -- --ci`, lint, typecheck, test, e2e). CI runs it via `nix develop --command just ci`.
 - `just lint` — oxlint (config: `.oxlintrc.json`). A PostToolUse hook already lints each edited file.
 - `just test` — vitest run; pass args through, e.g. `just test test/unit/foo.test.ts -t "name"` or `just test --project unit`. `just test-watch` for watch mode.
-- `just e2e` — Playwright (`playwright.config.ts`); builds the app and serves it on :3000. Pass args through, e.g. `just e2e test/e2e/home.spec.ts`.
+- `just e2e` — Playwright (`playwright.config.ts`); applies migrations, builds the app and serves it on :3000 (needs `just db-up`). Pass args through, e.g. `just e2e test/e2e/projects.spec.ts`.
 - `just db-up` / `just db-down` — local PostgreSQL via Docker Compose (`compose.yaml`). Copy `.env.example` to `.env` first.
 - `just db-generate` / `just db-migrate` / `just db-studio` — drizzle-kit (config: `drizzle.config.ts`).
 - Format with `nix fmt` (treefmt-nix: nixfmt for Nix, oxfmt for JS/TS/Vue/JSON/YAML/Markdown with default Prettier-compatible style — double quotes, semicolons). Register new formatters under `treefmt.programs` in `flake.nix`; don't add formatters as npm deps.
@@ -36,6 +36,8 @@ Two vitest projects (`vitest.config.ts`):
 Both directories are type-checked by `just typecheck` (`test/unit` via `typescript.nodeTsConfig` in `nuxt.config.ts`). Tests elsewhere won't be picked up.
 
 E2E tests live in `test/e2e/**/*.spec.ts` (Playwright, not vitest). Browsers come from nixpkgs via `PLAYWRIGHT_BROWSERS_PATH` in the devShell — never run `playwright install`. `@playwright/test` is pinned to exactly the nixpkgs `playwright-driver` version; bump both together or browsers won't launch.
+
+E2E tests share one database with no cleanup: name test data with `uniqueName()` and never assume a table is empty (test empty states in `test/nuxt` with `registerEndpoint`). Navigate with `gotoHydrated()` (`test/e2e/support/app.ts`) before interacting with forms. In `test/nuxt`, call `clearNuxtData()` in `beforeEach` — `useFetch` results are cached across mounts.
 
 To check UI by eye, use the Playwright MCP server (`.mcp.json`) against `just dev` on http://localhost:3000.
 
