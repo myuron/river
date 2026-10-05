@@ -47,7 +47,10 @@
           allowlist = agentLib.allowlistFor {
             inherit catalog sources;
             enableAll = [ "local" ];
-            enable = [ "skill-creator" ];
+            enable = [
+              "skill-creator"
+              "frontend-design"
+            ];
           };
           selection = agentLib.selectSkills {
             inherit catalog allowlist sources;
