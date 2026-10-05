@@ -135,3 +135,52 @@ test("shows zero issue counts for a project without issues", async ({ page, requ
   }
   await expect(page.getByText("期限切れの課題はありません")).toBeVisible();
 });
+
+test("shows remaining work per assignee", async ({ page, request }) => {
+  const projectId = await createProject(request);
+  const parent = await createTask(request, projectId, {
+    title: "親",
+    assignee: "佐藤",
+    estimateHours: 50,
+  });
+  await createTask(request, projectId, {
+    title: "a",
+    parentId: parent,
+    assignee: "佐藤",
+    estimateHours: 3,
+  });
+  await createTask(request, projectId, {
+    title: "b",
+    parentId: parent,
+    assignee: "鈴木",
+    estimateHours: 8,
+  });
+  await createTask(request, projectId, {
+    title: "c",
+    assignee: "鈴木",
+    estimateHours: 5,
+    status: "done",
+  });
+  await createTask(request, projectId, { title: "d", estimateHours: 30 });
+  await createTask(request, projectId, { title: "e", assignee: "高橋", status: "done" });
+  await createIssue(request, projectId, { title: "i1", assignee: "佐藤" });
+  // Saved trimmed by the API; trimming in the summary itself is unit-tested.
+  await createIssue(request, projectId, { title: "i2", assignee: " 佐藤 " });
+  await createIssue(request, projectId, { title: "i3", assignee: "高橋", status: "resolved" });
+  const other = await createProject(request);
+  await createTask(request, other, { title: "x", assignee: "佐藤", estimateHours: 99 });
+
+  await openDashboard(page, projectId);
+  const rows = page.getByTestId("workload-row");
+  await expect(rows.getByTestId("workload-assignee")).toHaveText(["鈴木", "佐藤", "未割り当て"]);
+  await expect(rows.getByTestId("workload-tasks")).toHaveText(["1", "1", "1"]);
+  await expect(rows.getByTestId("workload-hours")).toHaveText(["8h", "3h", "30h"]);
+  await expect(rows.getByTestId("workload-issues")).toHaveText(["0", "2", "0"]);
+});
+
+test("shows a message when there is no remaining work", async ({ page, request }) => {
+  const projectId = await createProject(request);
+  await createTask(request, projectId, { title: "完了", assignee: "佐藤", status: "done" });
+  await openDashboard(page, projectId);
+  await expect(page.getByText("未完了の作業はありません")).toBeVisible();
+});
