@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWbsTree, flattenWbsTree } from "../../shared/utils/wbs";
+import { buildWbsTree, countDescendants, flattenWbsTree } from "../../shared/utils/wbs";
 
 const task = (id: number, parentId: number | null = null) => ({ id, parentId, title: `t${id}` });
 
@@ -41,5 +41,13 @@ describe("WBS tree", () => {
     const [root] = buildWbsTree([task(1), task(2, 1), task(3, 2)]);
     expect(root!.children.map((c) => c.task.id)).toEqual([2]);
     expect(root!.children[0]!.children.map((c) => c.task.id)).toEqual([3]);
+  });
+});
+
+describe("countDescendants", () => {
+  it("counts every node below, at any depth", () => {
+    const [root, leaf] = buildWbsTree([task(1), task(2, 1), task(3, 2), task(4, 1), task(5)]);
+    expect(countDescendants(root!)).toBe(3);
+    expect(countDescendants(leaf!)).toBe(0);
   });
 });

@@ -1,27 +1,6 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { createProject, gotoHydrated } from "./support/app";
-
-async function addTopLevel(page: Page, title: string) {
-  await page.getByLabel("タスク名", { exact: true }).fill(title);
-  await page.getByRole("button", { name: "タスクを追加", exact: true }).click();
-  await expect(page.getByTestId("wbs-title").filter({ hasText: title })).toBeVisible();
-}
-
-async function addChild(page: Page, parentTitle: string, title: string) {
-  const row = page.getByTestId("wbs-row").filter({
-    has: page.getByTestId("wbs-title").getByText(parentTitle, { exact: true }),
-  });
-  await row.getByRole("button", { name: "子タスクを追加" }).click();
-  await page.getByLabel("子タスク名").fill(title);
-  await page.getByRole("button", { name: "追加", exact: true }).click();
-  await expect(page.getByTestId("wbs-title").getByText(title, { exact: true })).toBeVisible();
-}
-
-async function wbsRows(page: Page) {
-  const numbers = await page.getByTestId("wbs-number").allTextContents();
-  const titles = await page.getByTestId("wbs-title").allTextContents();
-  return numbers.map((n, i) => `${n} ${titles[i]}`);
-}
+import { addChild, addTopLevel, wbsRows } from "./support/wbs";
 
 test("builds a nested WBS that survives reload", async ({ page, request }) => {
   const projectId = await createProject(request);

@@ -6,15 +6,31 @@ const rows = computed(() => flattenWbsTree(buildWbsTree(props.tasks)));
 
 const newTitle = ref("");
 const newError = ref("");
-const childParentId = ref<number | null>(null);
-const childTitle = ref("");
-const childError = ref("");
 const submitting = ref(false);
 
-async function addTask(
-  parentId: number | null,
+/** The row whose inline form is open: adding a child or editing the title. */
+const inline = ref<{ mode: "child" | "edit"; taskId: number } | null>(null);
+const inlineTitle = ref("");
+const inlineError = ref("");
+const rowError = ref<{ taskId: number; message: string } | null>(null);
+const deletingId = ref<number | null>(null);
+
+// Drop state that points at tasks which no longer exist.
+watch(
+  () => props.tasks,
+  (tasks) => {
+    const ids = new Set(tasks.map((t) => t.id));
+    if (inline.value && !ids.has(inline.value.taskId)) inline.value = null;
+    if (rowError.value && !ids.has(rowError.value.taskId)) rowError.value = null;
+  },
+);
+
+const tasksUrl = computed(() => `/api/projects/${props.projectId}/tasks`);
+
+async function submit(
   title: string,
   setError: (message: string) => void,
+  send: () => Promise<unknown>,
 ) {
   setError("");
   if (!normalizeRequiredText(title)) {
@@ -23,10 +39,7 @@ async function addTask(
   }
   submitting.value = true;
   try {
-    await $fetch(`/api/projects/${props.projectId}/tasks`, {
-      method: "POST",
-      body: { title, parentId },
-    });
+    await send();
     emit("changed");
     return true;
   } catch (e) {
@@ -38,21 +51,57 @@ async function addTask(
 }
 
 async function addTopLevel() {
-  if (await addTask(null, newTitle.value, (m) => (newError.value = m))) {
-    newTitle.value = "";
-  }
+  const title = newTitle.value;
+  const ok = await submit(
+    title,
+    (m) => (newError.value = m),
+    () => $fetch(tasksUrl.value, { method: "POST", body: { title, parentId: null } }),
+  );
+  if (ok) newTitle.value = "";
 }
 
-function openChildForm(parentId: number) {
-  childParentId.value = parentId;
-  childTitle.value = "";
-  childError.value = "";
+function openInline(mode: "child" | "edit", task: Task) {
+  rowError.value = null;
+  inline.value = { mode, taskId: task.id };
+  inlineTitle.value = mode === "edit" ? task.title : "";
+  inlineError.value = "";
 }
 
-async function addChild() {
-  if (childParentId.value === null) return;
-  if (await addTask(childParentId.value, childTitle.value, (m) => (childError.value = m))) {
-    childParentId.value = null;
+async function submitInline() {
+  const current = inline.value;
+  if (!current) return;
+  const title = inlineTitle.value;
+  const ok = await submit(
+    title,
+    (m) => (inlineError.value = m),
+    () =>
+      current.mode === "child"
+        ? $fetch(tasksUrl.value, { method: "POST", body: { title, parentId: current.taskId } })
+        : $fetch(`${tasksUrl.value}/${current.taskId}`, { method: "PATCH", body: { title } }),
+  );
+  if (ok) inline.value = null;
+}
+
+async function deleteTask(node: WbsNode<Task>) {
+  if (deletingId.value !== null) return;
+  const descendants = countDescendants(node);
+  const message =
+    descendants > 0
+      ? `「${node.task.title}」を削除しますか？\n配下のタスク${descendants}件もすべて削除されます。`
+      : `「${node.task.title}」を削除しますか？`;
+  if (!window.confirm(message)) return;
+
+  rowError.value = null;
+  deletingId.value = node.task.id;
+  try {
+    await $fetch(`${tasksUrl.value}/${node.task.id}`, { method: "DELETE" });
+    inline.value = null;
+  } catch (e) {
+    rowError.value = { taskId: node.task.id, message: errorMessage(e) };
+  } finally {
+    deletingId.value = null;
+    // Refresh on failure too: the task may already be gone (404).
+    emit("changed");
   }
 }
 </script>
@@ -80,21 +129,44 @@ async function addChild() {
         <div class="wbs-line">
           <span class="wbs-number" data-testid="wbs-number">{{ row.number }}</span>
           <span class="wbs-title" data-testid="wbs-title">{{ row.task.title }}</span>
-          <button type="button" class="secondary small" @click="openChildForm(row.task.id)">
-            子タスクを追加
-          </button>
+          <span class="wbs-actions">
+            <button type="button" class="secondary small" @click="openInline('edit', row.task)">
+              編集
+            </button>
+            <button
+              type="button"
+              class="danger small"
+              :disabled="deletingId !== null"
+              @click="deleteTask(row)"
+            >
+              削除
+            </button>
+            <button type="button" class="secondary small" @click="openInline('child', row.task)">
+              子タスクを追加
+            </button>
+          </span>
         </div>
         <form
-          v-if="childParentId === row.task.id"
-          class="form-row child-form"
-          @submit.prevent="addChild"
+          v-if="inline?.taskId === row.task.id"
+          class="form-row inline-form"
+          @submit.prevent="submitInline"
         >
-          <input v-model="childTitle" name="child-title" type="text" aria-label="子タスク名" />
-          <button type="submit" :disabled="submitting">追加</button>
-          <button type="button" class="secondary" @click="childParentId = null">キャンセル</button>
+          <input
+            v-model="inlineTitle"
+            name="inline-title"
+            type="text"
+            :aria-label="inline.mode === 'child' ? '子タスク名' : '新しいタイトル'"
+          />
+          <button type="submit" :disabled="submitting">
+            {{ inline.mode === "child" ? "追加" : "保存" }}
+          </button>
+          <button type="button" class="secondary" @click="inline = null">キャンセル</button>
         </form>
-        <p v-if="childParentId === row.task.id && childError" class="error" role="alert">
-          {{ childError }}
+        <p v-if="inline?.taskId === row.task.id && inlineError" class="error" role="alert">
+          {{ inlineError }}
+        </p>
+        <p v-if="rowError?.taskId === row.task.id" class="error" role="alert">
+          {{ rowError.message }}
         </p>
       </li>
     </ul>
@@ -135,7 +207,12 @@ async function addChild() {
   flex: 1;
 }
 
-.child-form {
+.wbs-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.inline-form {
   margin-top: 0.5rem;
 }
 

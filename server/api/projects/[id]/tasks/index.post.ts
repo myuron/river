@@ -26,7 +26,14 @@ export default defineEventHandler(async (event) => {
   const [task] = await useDb()
     .insert(tasks)
     .values({ projectId: project.id, parentId: parentId as number | null, title })
-    .returning();
+    .returning()
+    .catch((error: unknown) => {
+      // The parent was deleted after the check above.
+      if (isForeignKeyViolation(error)) {
+        throw createError({ statusCode: 400, message: "親タスクが見つかりません" });
+      }
+      throw error;
+    });
   setResponseStatus(event, 201);
   return task;
 });
