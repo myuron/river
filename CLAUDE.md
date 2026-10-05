@@ -2,17 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-river is a web application (early stage — no application code yet).
+river is a web application built with Nuxt 4 + TypeScript (early stage — still the minimal template). App code lives under `app/` (Nuxt 4 layout).
 
 ## Environment
 
 - The dev environment is a Nix flake devShell (`flake.nix`), loaded via direnv (`.envrc`: `use flake`). It provides `nodejs`, `pnpm`, and `just`.
 - Add new tools to `devShells.default.packages` in `flake.nix` — don't install globally or rely on ad-hoc `npx`/`nix-env`.
 - Use `pnpm` as the package manager (not npm/yarn).
+- pnpm 11 blocks dependency build scripts by default; allow them per package under `allowBuilds` in `pnpm-workspace.yaml`.
+- TypeScript is pinned to 6.x: vue-tsc (used by `nuxt typecheck`) does not work with TypeScript 7.
 
 ## Commands
 
 - Define recurring tasks (dev, build, test, lint, etc.) as recipes in `Justfile`; run `just` to list them.
+- `just dev` / `just build` — Nuxt dev server / production build.
+- `just typecheck` — `nuxt typecheck` (vue-tsc).
+- `just ci` — everything CI runs (format check, lint, typecheck, test).
 - `just lint` — oxlint (config: `.oxlintrc.json`). Run after editing JS/TS.
 - `just test` — vitest run; pass args through, e.g. `just test src/foo.test.ts -t "name"`. `just test-watch` for watch mode.
 - Format with `nix fmt` (treefmt-nix; currently only nixfmt). When adding a formatter for another language, register it under `treefmt.programs` in `flake.nix`.
