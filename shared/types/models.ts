@@ -1,4 +1,5 @@
 // JSON shapes returned by the API (dates are ISO strings).
+import type { TaskStatus } from "../utils/task-details";
 
 export interface Project {
   id: number;
@@ -11,5 +12,13 @@ export interface Task {
   projectId: number;
   parentId: number | null;
   title: string;
+  /** "YYYY-MM-DD" calendar dates. */
+  plannedStart: string | null;
+  plannedEnd: string | null;
+  actualStart: string | null;
+  actualEnd: string | null;
+  assignee: string | null;
+  status: TaskStatus;
+  estimateHours: number | null;
   createdAt: string;
 }

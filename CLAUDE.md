@@ -47,6 +47,11 @@ To check UI by eye, use the Playwright MCP server (`.mcp.json`) against `just de
 - In server code, use the auto-imported `useDb()` (`server/utils/db.ts`). The connection URL comes from `NUXT_DATABASE_URL` (`runtimeConfig.databaseUrl`).
 - Changing `DB_PORT` (compose host port) also requires editing the port in `NUXT_DATABASE_URL`; `drizzle.config.ts` loads `.env` itself.
 
+## Code notes
+
+- Code in `shared/utils` and `shared/types` is auto-imported in `app/` and `server/`, but `test/unit` imports it by relative path, so files inside `shared/` must import each other explicitly.
+- Give `$fetch` an explicit response type for non-literal URLs (`$fetch<Task>(url, ...)`); otherwise Nitro's typed-route inference fails with TS2321 "Excessive stack depth".
+
 ## Conventions
 
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `chore:`, ...).

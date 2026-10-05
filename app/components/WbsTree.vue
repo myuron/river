@@ -2,14 +2,17 @@
 const props = defineProps<{ projectId: number; tasks: Task[] }>();
 const emit = defineEmits<{ changed: [] }>();
 
-const rows = computed(() => flattenWbsTree(buildWbsTree(props.tasks)));
+const tree = computed(() => buildWbsTree(props.tasks));
+const rows = computed(() => flattenWbsTree(tree.value));
+const estimates = computed(() => estimateTotals(tree.value));
 
 const newTitle = ref("");
 const newError = ref("");
 const submitting = ref(false);
 
-/** The row whose inline form is open: adding a child or editing the title. */
-const inline = ref<{ mode: "child" | "edit"; taskId: number } | null>(null);
+/** The row whose inline form is open: adding a child, editing the title or the details. */
+type InlineMode = "child" | "edit" | "details";
+const inline = ref<{ mode: InlineMode; taskId: number } | null>(null);
 const inlineTitle = ref("");
 const inlineError = ref("");
 const rowError = ref<{ taskId: number; message: string } | null>(null);
@@ -55,16 +58,21 @@ async function addTopLevel() {
   const ok = await submit(
     title,
     (m) => (newError.value = m),
-    () => $fetch(tasksUrl.value, { method: "POST", body: { title, parentId: null } }),
+    () => $fetch<Task>(tasksUrl.value, { method: "POST", body: { title, parentId: null } }),
   );
   if (ok) newTitle.value = "";
 }
 
-function openInline(mode: "child" | "edit", task: Task) {
+function openInline(mode: InlineMode, task: Task) {
   rowError.value = null;
   inline.value = { mode, taskId: task.id };
   inlineTitle.value = mode === "edit" ? task.title : "";
   inlineError.value = "";
+}
+
+function onDetailsSaved() {
+  inline.value = null;
+  emit("changed");
 }
 
 async function submitInline() {
@@ -76,8 +84,11 @@ async function submitInline() {
     (m) => (inlineError.value = m),
     () =>
       current.mode === "child"
-        ? $fetch(tasksUrl.value, { method: "POST", body: { title, parentId: current.taskId } })
-        : $fetch(`${tasksUrl.value}/${current.taskId}`, { method: "PATCH", body: { title } }),
+        ? $fetch<Task>(tasksUrl.value, {
+            method: "POST",
+            body: { title, parentId: current.taskId },
+          })
+        : $fetch<Task>(`${tasksUrl.value}/${current.taskId}`, { method: "PATCH", body: { title } }),
   );
   if (ok) inline.value = null;
 }
@@ -94,7 +105,7 @@ async function deleteTask(node: WbsNode<Task>) {
   rowError.value = null;
   deletingId.value = node.task.id;
   try {
-    await $fetch(`${tasksUrl.value}/${node.task.id}`, { method: "DELETE" });
+    await $fetch<null>(`${tasksUrl.value}/${node.task.id}`, { method: "DELETE" });
     inline.value = null;
   } catch (e) {
     rowError.value = { taskId: node.task.id, message: errorMessage(e) };
@@ -119,6 +130,17 @@ async function deleteTask(node: WbsNode<Task>) {
 
     <p v-if="rows.length === 0" class="empty">タスクがまだありません</p>
     <ul v-else class="wbs">
+      <li class="wbs-row wbs-header" aria-hidden="true">
+        <div class="wbs-line">
+          <span>WBS</span>
+          <span>タスク</span>
+          <span>予定期間</span>
+          <span>担当者</span>
+          <span>ステータス</span>
+          <span class="wbs-estimate">見積</span>
+          <span />
+        </div>
+      </li>
       <li
         v-for="row in rows"
         :key="row.task.id"
@@ -129,7 +151,22 @@ async function deleteTask(node: WbsNode<Task>) {
         <div class="wbs-line">
           <span class="wbs-number" data-testid="wbs-number">{{ row.number }}</span>
           <span class="wbs-title" data-testid="wbs-title">{{ row.task.title }}</span>
+          <span data-testid="wbs-period">
+            {{ formatPeriod(row.task.plannedStart, row.task.plannedEnd) }}
+          </span>
+          <span data-testid="wbs-assignee">{{ row.task.assignee ?? "-" }}</span>
+          <span data-testid="wbs-status">
+            <span class="status" :class="`status-${row.task.status}`">
+              {{ TASK_STATUS_LABELS[row.task.status] }}
+            </span>
+          </span>
+          <span class="wbs-estimate" data-testid="wbs-estimate">
+            {{ formatHours(estimates.get(row.task.id) ?? null) }}
+          </span>
           <span class="wbs-actions">
+            <button type="button" class="secondary small" @click="openInline('details', row.task)">
+              詳細
+            </button>
             <button type="button" class="secondary small" @click="openInline('edit', row.task)">
               編集
             </button>
@@ -146,8 +183,16 @@ async function deleteTask(node: WbsNode<Task>) {
             </button>
           </span>
         </div>
+        <WbsTaskDetailsForm
+          v-if="inline?.taskId === row.task.id && inline.mode === 'details'"
+          :project-id="projectId"
+          :task="row.task"
+          :has-children="row.children.length > 0"
+          @saved="onDetailsSaved"
+          @cancel="inline = null"
+        />
         <form
-          v-if="inline?.taskId === row.task.id"
+          v-else-if="inline?.taskId === row.task.id"
           class="form-row inline-form"
           @submit.prevent="submitInline"
         >
@@ -188,23 +233,52 @@ async function deleteTask(node: WbsNode<Task>) {
 }
 
 .wbs-row {
-  padding: 0.5rem 1rem 0.5rem calc(1rem + var(--depth) * 1.5rem);
+  padding: 0.5rem 1rem;
+}
+
+.wbs-header {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .wbs-line {
-  display: flex;
+  display: grid;
+  grid-template-columns: 4.5rem minmax(10rem, 1fr) 12.5rem 7rem 5rem 4rem auto;
   align-items: center;
   gap: 0.75rem;
 }
 
 .wbs-number {
-  min-width: 3rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
-.wbs-title {
-  flex: 1;
+.wbs-row:not(.wbs-header) .wbs-title {
+  padding-left: calc(var(--depth) * 1.25rem);
+}
+
+.wbs-estimate {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  display: inline-block;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.status-in_progress {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.status-done {
+  color: var(--muted);
 }
 
 .wbs-actions {

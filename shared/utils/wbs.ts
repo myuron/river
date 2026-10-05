@@ -39,3 +39,23 @@ export function flattenWbsTree<T extends WbsItem>(nodes: readonly WbsNode<T>[]):
 export function countDescendants(node: WbsNode<WbsItem>): number {
   return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0);
 }
+
+/**
+ * Estimate shown per task: a leaf's own estimate (null when unset), or for a
+ * parent the sum of its children's totals with unset counted as 0.
+ */
+export function estimateTotals<T extends WbsItem & { estimateHours: number | null }>(
+  nodes: readonly WbsNode<T>[],
+): Map<number, number | null> {
+  const totals = new Map<number, number | null>();
+  const visit = (node: WbsNode<T>): number | null => {
+    const total =
+      node.children.length === 0
+        ? node.task.estimateHours
+        : node.children.reduce((sum, child) => sum + (visit(child) ?? 0), 0);
+    totals.set(node.task.id, total);
+    return total;
+  };
+  nodes.forEach(visit);
+  return totals;
+}

@@ -1,6 +1,8 @@
 // Drizzle table definitions. Run `just db-generate` after changing this file.
 import {
   type AnyPgColumn,
+  date,
+  doublePrecision,
   index,
   integer,
   pgTable,
@@ -8,6 +10,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import type { TaskStatus } from "../../shared/utils/task-details";
 
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
@@ -27,6 +30,13 @@ export const tasks = pgTable(
       onDelete: "cascade",
     }),
     title: text("title").notNull(),
+    plannedStart: date("planned_start", { mode: "string" }),
+    plannedEnd: date("planned_end", { mode: "string" }),
+    actualStart: date("actual_start", { mode: "string" }),
+    actualEnd: date("actual_end", { mode: "string" }),
+    assignee: text("assignee"),
+    status: text("status").$type<TaskStatus>().notNull().default("todo"),
+    estimateHours: doublePrecision("estimate_hours"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
