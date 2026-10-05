@@ -18,8 +18,8 @@ river is a web application built with Nuxt 4 + TypeScript (early stage — still
 - Define recurring tasks (dev, build, test, lint, etc.) as recipes in `Justfile`; run `just` to list them.
 - `just dev` / `just build` — Nuxt dev server / production build.
 - `just typecheck` — `nuxt typecheck` (vue-tsc).
-- `just ci` — everything CI runs (format check, lint, typecheck, test).
-- `just lint` — oxlint (config: `.oxlintrc.json`). Run after editing JS/TS.
+- `just ci` — everything CI runs (`install`, `nix fmt -- --ci`, lint, typecheck, test). CI runs it via `nix develop --command just ci`.
+- `just lint` — oxlint (config: `.oxlintrc.json`). A PostToolUse hook already lints each edited file.
 - `just test` — vitest run; pass args through, e.g. `just test test/unit/foo.test.ts -t "name"` or `just test --project unit`. `just test-watch` for watch mode.
 - `just db-up` / `just db-down` — local PostgreSQL via Docker Compose (`compose.yaml`). Copy `.env.example` to `.env` first.
 - `just db-generate` / `just db-migrate` / `just db-studio` — drizzle-kit (config: `drizzle.config.ts`).
@@ -38,7 +38,11 @@ Both directories are type-checked by `just typecheck` (`test/unit` via `typescri
 
 - PostgreSQL + Drizzle ORM (`postgres` driver). Tables go in `server/db/schema.ts`; migrations are generated into `server/db/migrations/` and committed.
 - In server code, use the auto-imported `useDb()` (`server/utils/db.ts`). The connection URL comes from `NUXT_DATABASE_URL` (`runtimeConfig.databaseUrl`).
+- Changing `DB_PORT` (compose host port) also requires editing the port in `NUXT_DATABASE_URL`; `drizzle.config.ts` loads `.env` itself.
 
 ## Conventions
 
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `chore:`, ...).
+- Never commit to `main`; work on `<type>/<issue>-<kebab-summary>` branches and merge via PR (`Closes #<n>` in the body). Stage files by path, not `git add -A`.
+- Never force-push or push to `main` — a PreToolUse hook (`.claude/hooks/guard-git-push.mjs`) blocks it.
+- Issue → PR work goes through `/ship`; pass changes to the `reviewer` agent before opening a PR.
