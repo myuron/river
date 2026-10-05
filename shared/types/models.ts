@@ -1,4 +1,5 @@
 // JSON shapes returned by the API (dates are ISO strings).
+import type { IssueStatus } from "../utils/issues";
 import type { TaskStatus } from "../utils/task-details";
 
 export interface Project {
@@ -20,5 +21,14 @@ export interface Task {
   assignee: string | null;
   status: TaskStatus;
   estimateHours: number | null;
+  createdAt: string;
+}
+
+export interface Issue {
+  id: number;
+  projectId: number;
+  title: string;
+  body: string;
+  status: IssueStatus;
   createdAt: string;
 }

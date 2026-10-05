@@ -10,6 +10,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import type { IssueStatus } from "../../shared/utils/issues";
 import type { TaskStatus } from "../../shared/utils/task-details";
 
 export const projects = pgTable("projects", {
@@ -43,4 +44,19 @@ export const tasks = pgTable(
     index("tasks_project_id_idx").on(table.projectId),
     index("tasks_parent_id_idx").on(table.parentId),
   ],
+);
+
+export const issues = pgTable(
+  "issues",
+  {
+    id: serial("id").primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    status: text("status").$type<IssueStatus>().notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("issues_project_id_idx").on(table.projectId)],
 );
