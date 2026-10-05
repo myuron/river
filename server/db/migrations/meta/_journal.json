@@ -36,6 +36,13 @@
       "when": 1791219200082,
       "tag": "0004_issue_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791219479825,
+      "tag": "0005_issue_comments",
+      "breakpoints": true
     }
   ]
 }
