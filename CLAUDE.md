@@ -19,8 +19,17 @@ river is a web application built with Nuxt 4 + TypeScript (early stage — still
 - `just typecheck` — `nuxt typecheck` (vue-tsc).
 - `just ci` — everything CI runs (format check, lint, typecheck, test).
 - `just lint` — oxlint (config: `.oxlintrc.json`). Run after editing JS/TS.
-- `just test` — vitest run; pass args through, e.g. `just test src/foo.test.ts -t "name"`. `just test-watch` for watch mode.
+- `just test` — vitest run; pass args through, e.g. `just test test/unit/foo.test.ts -t "name"` or `just test --project unit`. `just test-watch` for watch mode.
 - Format with `nix fmt` (treefmt-nix: nixfmt for Nix, oxfmt for JS/TS/Vue/JSON/YAML/Markdown with default Prettier-compatible style — double quotes, semicolons). Register new formatters under `treefmt.programs` in `flake.nix`; don't add formatters as npm deps.
+
+## Testing
+
+Two vitest projects (`vitest.config.ts`):
+
+- `test/unit/**/*.test.ts` — plain Node environment. Use for logic that doesn't need Nuxt; much faster.
+- `test/nuxt/**/*.test.ts` — Nuxt runtime environment (`@nuxt/test-utils`, happy-dom). Use for components/composables; mount with `mountSuspended` from `@nuxt/test-utils/runtime`, and `~/` aliases work.
+
+Both directories are type-checked by `just typecheck` (`test/unit` via `typescript.nodeTsConfig` in `nuxt.config.ts`). Tests elsewhere won't be picked up.
 
 ## Conventions
 
